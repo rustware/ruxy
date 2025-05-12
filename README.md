@@ -2,7 +2,7 @@
   <a href="https://ruxy.dev">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="assets/logo/light/ruxy.svg">
-      <img alt="Next.js logo" src="assets/logo/dark/ruxy.svg" height="128">
+      <img alt="Next.js logo" src="assets/logo/dark/ruxy.svg" height="64">
     </picture>
   </a>
   <div align="center">
