@@ -3,4 +3,10 @@ name = "ruxy"
 version = "0.1.0"
 edition = "2024"
 
+description = "Unlimited Web with Rust & React"
+homepage = "https://ruxy.dev"
+repository = "https://github.com/rustware/ruxy"
+documentation = "https://github.com/rustware/ruxy"
+license = "MIT"
+
 [dependencies]
