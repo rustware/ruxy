@@ -5,6 +5,8 @@
       <img alt="Next.js logo" src="assets/logo/dark/ruxy.svg" height="128">
     </picture>
   </a>
+</div>
+<div align="center">
   <h1>Rust speed. React simplicity. Ruxy.</h1>
 </div>
 
