@@ -22,11 +22,15 @@ a fully native, type-safe backend that serves pre-hydrated React apps at incredi
 With Ruxy, you write your frontend in React, your backend in Rust, and deploy a single,
 unified application — no compromise, no JS bloat, no V8.
 
-<hr />
+#### Project status
+
+Ruxy is just getting started — under active development and open to contributions. 🧱
+
+---
 
 ### Server-side rendering, reimagined.
 
-#### Client Example
+#### Client
 
 ```tsx
 import { useQuery, useServerValues } from '@ruxyjs/server';
@@ -45,10 +49,10 @@ export default function Homepage() {
 }
 ```
 
-#### Server Example
+#### Server
 
 ```rust
-#[ruxy::page('/')]
+#[ruxy::cache(1 hour)]
 async fn page(ctx: Context) {
   ruxy::add_value!("message", "Hi there!");
   ruxy::add_value!("luckyNumber", 42);
@@ -57,3 +61,6 @@ async fn page(ctx: Context) {
 
 Pretty simple, huh?
 
+---
+
+...

@@ -3,10 +3,13 @@ name = "ruxy"
 version = "0.1.0"
 edition = "2024"
 
-description = "Unlimited Web with Rust & React"
+description = "Rust speed. React simplicity. Ruxy."
 homepage = "https://ruxy.dev"
 repository = "https://github.com/rustware/ruxy"
 documentation = "https://github.com/rustware/ruxy"
 license = "MIT"
 
 [dependencies]
+ruxy_macro = { path = "../ruxy_macro" }
+
+tokio = { version = "1.45.0", features = ["full"] }
