@@ -1,0 +1,11 @@
+{
+  "name": "ruxy",
+  "version": "0.0.1",
+  "description": "Rust speed. React simplicity. Ruxy.",
+  "author": "Rustware",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "nx": "21.0.3"
+  }
+}
