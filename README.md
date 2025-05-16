@@ -14,13 +14,20 @@
   </div>
 </div>
 
-Ruxy is an emerging framework that brings together the performance of Rust and the flexibility of React.
+**Ruxy** is an emerging framework that combines the performance of Rust with the flexibility of React.
 
-It enables true server-side rendering without Node.js, V8, or JavaScript runtimes on the server — giving you
-a fully native, type-safe backend that serves pre-hydrated React apps at incredible speed.
+It enables true server-side rendering without Node.js, V8, or any JavaScript runtime on the server — a fully
+native backend serving pre-rendered React apps at incredible speed ([how it works](ARCHITECTURE.md)).
 
-With Ruxy, you write your frontend in React, your backend in Rust, and deploy a single,
-unified application — no compromise, no JS bloat, no V8.
+With Ruxy, you build your frontend in [React](https://react.dev) and your backend in [Rust](https://rust-lang.org) — seamlessly integrated for a smooth developer experience.
+
+---
+
+#### Performance
+
+Thanks to its novel approach, Ruxy is [_incredibly_](BENCHMARKS.md) fast. Zero-allocation rendering and routing.
+
+---
 
 #### Project status
 
@@ -58,8 +65,6 @@ async fn page(ctx: Context) {
   ruxy::add_value!("luckyNumber", 42);
 }
 ```
-
-Pretty simple, huh?
 
 ---
 
