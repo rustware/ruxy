@@ -4,13 +4,18 @@
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/crates/ruxy/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/vvb/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/ruxy_macro/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/sand/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/cli/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/compiler/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/macro/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/routing/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/runtime/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/crates/ruxy/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/vvb/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="ts-external-references" level="project" />
   </component>
 </module>

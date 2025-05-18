@@ -1,0 +1,18 @@
+[package]
+name = "ruxy_macro"
+version = "0.1.0"
+edition = "2024"
+description = "Ruxy macros"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+ruxy_routing = { path = "../routing" }
+
+quote = "1.0.40"
+proc-macro2 = "1.0.95"
+rand = "0.9.1"
+
+[lints]
+workspace = true

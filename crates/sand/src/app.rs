@@ -9,7 +9,7 @@
 //  Safe. Fast. Fearless. Have fun. 🤘
 
 ruxy::app! {
-  
+
     async: {
         // Set this to false to disable async. OS threads will be used instead.
         // More information: https://ruxy.dev/docs/without-async

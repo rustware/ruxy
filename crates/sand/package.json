@@ -1,0 +1,12 @@
+{
+  "name": "sand",
+  "version": "0.0.1",
+  "description": "Playground application used for local development of Ruxy",
+  "author": "Rustware",
+  "license": "MIT",
+  "dependencies": {
+    "@types/react": "^19.1.4",
+    "react": "^19.1.0",
+    "ruxyjs": "file:../../packages/ruxyjs/src"
+  }
+}
