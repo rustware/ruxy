@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::fs;
-use std::path::{MAIN_SEPARATOR_STR, PathBuf, Path};
+use std::path::{MAIN_SEPARATOR_STR, Path, PathBuf};
 
 use rand::distr::{Alphanumeric, SampleString};
 
-use crate::route_tree::segment::resolve_segment_role::resolve_segment_role;
-use crate::SegmentRole;
 use super::{RequestHandler, RouteSegment, RouteSegmentFileModule, SegmentMap};
+use crate::SegmentEffect;
+use crate::route_tree::segment::resolve_segment_effect::resolve_segment_effect;
 
 /// Please read the documentation for the `RouteSegment` struct to understand what a Route Segment is
 pub fn build_segments(routes_dir: &Path, dir: PathBuf, depth: usize, parent_id: Option<String>) -> SegmentMap {
@@ -58,6 +58,7 @@ pub fn build_segments(routes_dir: &Path, dir: PathBuf, depth: usize, parent_id: 
   let mut layout_module: Option<RouteSegmentFileModule> = None;
 
   let mut child_segments = HashMap::new();
+  let mut compile_errors = Vec::new();
 
   for entry in entries.into_iter() {
     let Ok(entry) = entry else {
@@ -96,10 +97,10 @@ pub fn build_segments(routes_dir: &Path, dir: PathBuf, depth: usize, parent_id: 
             false => &format!("{}{}{}", MAIN_SEPARATOR_STR, rel_path_str, MAIN_SEPARATOR_STR),
           };
 
-          panic!(
-            "A route cannot contain both `{prefix}page.rs` and `{prefix}handler.rs`.\
+          compile_errors.push(format!(
+            "A route cannot contain both `{prefix}page.rs` and `{prefix}handler.rs`.\r\n\
             Both files are present here: `routes{path}{prefix}*.rs`",
-          );
+          ));
         }
 
         let suffix = match is_custom {
@@ -134,13 +135,21 @@ pub fn build_segments(routes_dir: &Path, dir: PathBuf, depth: usize, parent_id: 
   let is_leaf = child_segments.is_empty();
 
   if is_leaf && route_handler.is_none() {
-    // Leaf segment MUST have a Route Handler
+    // Leaf segment MUST have a Route Handler, otherwise ignored
     return HashMap::new();
   }
-  
-  let role = match is_root {
-    true => SegmentRole::PassThrough,
-    false => resolve_segment_role(dir_name),
+
+  let effect = match is_root {
+    true => SegmentEffect::AlwaysMatch,
+    false => resolve_segment_effect(dir_name).unwrap_or_else(|e| {
+      compile_errors.push(e);
+      
+      // We prevent compiling when there's an error in the route tree,
+      // so this will never affect runtime behavior in any way. We just
+      // want to make sure the segment modules are still being output
+      // by the `app!` macro, so we return a dummy value here.
+      SegmentEffect::AlwaysMatch
+    }),
   };
 
   let segment = RouteSegment {
@@ -149,13 +158,14 @@ pub fn build_segments(routes_dir: &Path, dir: PathBuf, depth: usize, parent_id: 
     fs_rel_path: rel_path.to_path_buf(),
     fs_abs_path: dir.to_path_buf(),
     parent: parent_id,
+    compile_errors,
     route_handler,
     not_found_handler,
     error_handler,
     layout_module,
     is_root,
     is_leaf,
-    role,
+    effect,
   };
 
   // Rename the variable to make it clear we're basing the returned

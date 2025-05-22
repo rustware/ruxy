@@ -1,5 +1,5 @@
 mod build_segments;
-mod resolve_segment_role;
+mod resolve_segment_effect;
 
 use std::collections::HashMap;
 use std::path;
@@ -59,8 +59,12 @@ pub struct RouteSegment {
   pub is_leaf: bool,
   /// Whether this segment is a root segment (i.e. it is the root of the "routes" directory)
   pub is_root: bool,
-  /// A role of this segment in relation to routing and "special" behavior (slots, ...)
-  pub role: SegmentRole,
+  /// A effect of this segment to the routing and "special" behavior (slots, ...)
+  pub effect: SegmentEffect,
+  /// A vector of error messages if this segment couldn't be parsed successfully.
+  /// We still want to include its modules in the `app!` macro output, but we don't want
+  /// to allow compiling the user application until the raised issue is addressed.
+  pub compile_errors: Vec<String>,
 }
 
 /// Segment identifier is its relative path from the "routes" directory.
@@ -91,23 +95,26 @@ pub struct RouteSegmentFileModule {
 /// A flat map of all the Route Segments
 pub type SegmentMap = HashMap<SegmentIdentifier, RouteSegment>;
 
-/// A segment Role determines its behavior as part of the routing tree.
+/// A Segment Effect determines how this Route Segment affects routing.
 #[derive(Debug)]
-pub enum SegmentRole {
+pub enum SegmentEffect {
   /// This can be a Route Group (either aliased – `(x)`, or fully expressed – `{var[0]}`).
-  PassThrough,
+  /// Segment with an AlwaysMatch effect does NOT consume any URL segment and ALWAYS matches.
+  AlwaysMatch,
   /// This can "branch" the matching into multiple different streams, rendered into multiple
-  /// different slots in the resulting page. The user code will contain a `<Slot name="x" />`.
+  /// different slots in this segment's page. The user code will contain a `<Slot name="x" />`.
+  /// Segment with a Slot effect does NOT consume any URL segment and ALWAYS matches.
   Slot {
     /// The name of this slot. To be used in `<Slot name="..." />`
     name: String,
   },
+  /// URL matcher can either match or divert.
+  /// If it matches, it consumes 0 or more URL segments.
+  /// If it diverts, it MUST NOT consume any URL segments.
   UrlMatcher {
     /// Sequences are used to create the radix trie by the `app!` macro to match against URLs.
     /// Sequences represent the segment sequences like `prefix-` (literal) and `{var}` (dynamic),
-    /// respecting their order of appearance in the directory name. Every sequence matcher must
-    /// either "consume" a part of URL and move the matching forward, or "divert" and end processing
-    /// of its routing branch.
+    /// respecting their order of appearance in the directory name.
     sequences: Vec<UrlMatcherSequence>,
   },
 }

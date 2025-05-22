@@ -2,6 +2,7 @@ edition = "2024"
 tab_spaces = 2
 max_width = 120
 use_small_heuristics = "Max"
-group_imports = "StdExternalCrate"
 reorder_imports = true
-imports_granularity = "Module"
+# Enable when shipped in stable:
+# group_imports = "StdExternalCrate"
+# imports_granularity = "Module"

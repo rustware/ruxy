@@ -33,7 +33,8 @@ pub fn gen_module_declarations_for_segment(segment: &RouteSegment) -> TokenStrea
   let declarations = modules.iter().map(|module| {
     let path = &module.path;
 
-    let ident = Ident::new(&module.name, Span::call_site());
+    // TODO: Is mixed_site correct here?
+    let ident = Ident::new(&module.name, Span::mixed_site());
 
     quote! {
       #[path = #path]
