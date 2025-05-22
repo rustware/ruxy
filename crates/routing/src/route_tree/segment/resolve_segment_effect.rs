@@ -201,7 +201,7 @@ fn resolve_url_matcher_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequenc
             }
 
             return Err(format!(
-              "Unexpected character \"{ch}\" at position XXX after a dot in arity specifier.\r\n\
+              "Unexpected character \"{ch}\" after a dot in arity specifier.\r\n\
               Single dot in arity specifier can only be followed by another dot, composing a range operator – `..`.",
             ));
           }
