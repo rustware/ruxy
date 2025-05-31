@@ -1,8 +1,10 @@
 [package]
 name = "sand"
+description = "Playground application used for local development of Ruxy"
 version = "0.1.0"
 edition = "2024"
-description = "Playground application used for local development of Ruxy"
+
+build = "build.rs"
 
 [[bin]]
 name = "sand"
@@ -10,6 +12,14 @@ path = "src/app.rs"
 
 [dependencies]
 ruxy = { path = "../ruxy" }
+ruxy_runtime = { path = "../runtime" }
+
+# Testing (remove when done):
+bytes.workspace = true
+hyper = "1.6.0"
+
+[build-dependencies]
+ruxy_build_script = { path = "../build_script" }
 
 [lints]
 workspace = true

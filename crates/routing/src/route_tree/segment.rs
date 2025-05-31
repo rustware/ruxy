@@ -3,7 +3,7 @@ mod resolve_segment_effect;
 
 use std::collections::HashMap;
 use std::path;
-
+use quote::quote;
 pub use build_segments::*;
 
 /// Route Segment represents a single directory nested any number of levels deep inside the "routes" directory,
@@ -35,14 +35,17 @@ pub use build_segments::*;
 pub struct RouteSegment {
   /// The directory name of this segment
   pub dir_name: String,
-  /// Absolute path to this segment's directory
-  pub fs_abs_path: path::PathBuf,
-  /// Relative path from the "routes" directory
-  pub fs_rel_path: path::PathBuf,
   /// Relative path from the "routes" directory (String)
   pub identifier: SegmentIdentifier,
-  /// Only the root segment has None as its parent
+  /// Identifier of the parent segment.
+  /// Only the root segment has None as its parent.
   pub parent: Option<SegmentIdentifier>,
+  /// A vector of error messages if this segment couldn't be parsed successfully.
+  /// We still want to include its modules in the `app!` macro output, but we don't want
+  /// to allow compiling the user application until the raised issue is addressed.
+  pub compile_errors: Vec<String>,
+  /// Identifiers of direct descendant segments
+  pub children: Vec<SegmentIdentifier>,
   /// Option containing Route Handler config for this segment,
   /// `None` if this segment does not have a Route Handler.
   pub route_handler: Option<RequestHandler>,
@@ -61,10 +64,9 @@ pub struct RouteSegment {
   pub is_root: bool,
   /// A effect of this segment to the routing and "special" behavior (slots, ...)
   pub effect: SegmentEffect,
-  /// A vector of error messages if this segment couldn't be parsed successfully.
-  /// We still want to include its modules in the `app!` macro output, but we don't want
-  /// to allow compiling the user application until the raised issue is addressed.
-  pub compile_errors: Vec<String>,
+  /// Unique HEX-encoded identifier of this segment.
+  /// This can be used as a unique identifier in generated code.
+  pub hex: String,
 }
 
 /// Segment identifier is its relative path from the "routes" directory.
@@ -99,8 +101,8 @@ pub type SegmentMap = HashMap<SegmentIdentifier, RouteSegment>;
 #[derive(Debug)]
 pub enum SegmentEffect {
   /// This can be a Route Group (either aliased – `(x)`, or fully expressed – `{var[0]}`).
-  /// Segment with an AlwaysMatch effect does NOT consume any URL segment and ALWAYS matches.
-  AlwaysMatch,
+  /// Segment with a Group effect does NOT consume any URL segment and ALWAYS matches.
+  Group,
   /// This can "branch" the matching into multiple different streams, rendered into multiple
   /// different slots in this segment's page. The user code will contain a `<Slot name="x" />`.
   /// Segment with a Slot effect does NOT consume any URL segment and ALWAYS matches.
@@ -117,6 +119,9 @@ pub enum SegmentEffect {
     /// respecting their order of appearance in the directory name.
     sequences: Vec<UrlMatcherSequence>,
   },
+  /// Matches empty URL segment (the segment between `foo` and `bar` in `/foo//bar`).
+  /// Directory name to match this segment is `_`.
+  EmptySegment,
 }
 
 #[derive(Debug)]
@@ -132,4 +137,51 @@ pub enum DynamicSequenceArity {
   Exact(usize),
   /// Range is inclusive on both sides
   Range(usize, Option<usize>),
+}
+
+impl DynamicSequenceArity {
+  pub fn get_rust_type(&self) -> proc_macro2::TokenStream {
+    match self {
+      Self::Exact(num) => match num {
+        1 => quote! { String },
+        other => quote! { [String; #other] },
+      },
+      Self::Range(lower, ..) => match lower {
+        0 => quote! { Vec<String> },
+        lower => quote! { ([String; #lower], Vec<String>) },
+      },
+    }
+  }
+}
+
+impl SegmentEffect {
+  pub fn closes_previous_segment(&self) -> bool {
+    match self {
+      SegmentEffect::Group => false,
+      SegmentEffect::Slot { .. } => false,
+      SegmentEffect::UrlMatcher { .. } => {
+        let Some(DynamicSequenceArity::Range(lower, ..)) = self.get_dynamice_sequence_arity() else {
+          return true;
+        };
+        
+        *lower > 0
+      },
+      SegmentEffect::EmptySegment => true,
+    }
+  }
+
+  pub fn get_dynamice_sequence_arity(&self) -> Option<&DynamicSequenceArity> {
+    match self {
+      SegmentEffect::UrlMatcher { sequences } => {
+        sequences.iter().find_map(|seq| {
+          if let UrlMatcherSequence::Dynamic { arity, .. } = seq {
+            Some(arity)
+          } else {
+            None
+          }
+        })
+      },
+      _ => None,
+    }
+  }
 }

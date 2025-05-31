@@ -12,15 +12,15 @@ pub fn gen_module_declarations_for_segment(segment: &RouteSegment) -> TokenStrea
   let mut modules = Vec::<&RouteSegmentFileModule>::new();
 
   macro_rules! extract_module_from_handler {
-      ($prop:ident) => {
-        if let Some(ref handler) = segment.$prop {
-          modules.push(match handler {
-            RequestHandler::Page { module } => module,
-            RequestHandler::Custom { module } => module,
-          });
-        }
-      };
-    }
+    ($prop:ident) => {
+      if let Some(ref handler) = segment.$prop {
+        modules.push(match handler {
+          RequestHandler::Page { module } => module,
+          RequestHandler::Custom { module } => module,
+        });
+      }
+    };
+  }
 
   extract_module_from_handler!(route_handler);
   extract_module_from_handler!(error_handler);
@@ -33,7 +33,6 @@ pub fn gen_module_declarations_for_segment(segment: &RouteSegment) -> TokenStrea
   let declarations = modules.iter().map(|module| {
     let path = &module.path;
 
-    // TODO: Is mixed_site correct here?
     let ident = Ident::new(&module.name, Span::mixed_site());
 
     quote! {

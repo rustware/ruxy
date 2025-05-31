@@ -1,4 +1,5 @@
 pub use ruxy_macro::app;
+pub use ruxy_macro::page;
 
 pub use ruxy_runtime::page::context::PageContext;
 

@@ -10,4 +10,4 @@ opt-level = 3
 new_without_default = "allow"
 
 [workspace.dependencies]
-# ruxy = { path = "crates/ruxy" }
+bytes = "1.10.1"

@@ -1,6 +1,6 @@
 use crate::{DynamicSequenceArity, SegmentEffect, UrlMatcherSequence};
 
-const SLOT_START: &str = "@";
+const SLOT_START: char = '@';
 const ESCAPE_SEQUENCE_START: char = '%';
 const DYNAMIC_SEQUENCE_START: char = '{';
 const DYNAMIC_SEQUENCE_END: char = '}';
@@ -8,6 +8,7 @@ const ARITY_SPECIFIER_START: char = '[';
 const ARITY_SPECIFIER_END: char = ']';
 const ROUTE_GROUP_START: char = '(';
 const ROUTE_GROUP_END: char = ')';
+const EMPTY_SEGMENT: char = '_';
 
 #[derive(PartialEq)]
 enum SpecialChar {
@@ -57,19 +58,24 @@ impl SpecialChar {
 /// 1. Only one dynamic sequence per segment.
 /// 2. Dynamic sequence other than arity:1 cannot have prefix or suffix.
 /// 3. Dynamic sequence name can contain only a-z, A-Z, 0-9, and _.
-/// 4. Special characters (%@(){}[]) must be percent-encoded if wanted to be matched literally.
+/// 4. Special characters in segment dirnames (%@(){}[]) must be percent-encoded if wanted to be matched literally.
 ///
 /// Forbidden characters: https://stackoverflow.com/a/31976060
 pub fn resolve_segment_effect(dir_name: &str) -> Result<SegmentEffect, String> {
   // Named Slots for Parallel Routes (`@my_slot`)
   if let Some(slot_name) = dir_name.strip_prefix(SLOT_START) {
-    let decoded = decode_percent_encodings(slot_name, dir_name)?;
+    let decoded = decode_percent_encodings(slot_name, 1)?;
     return Ok(SegmentEffect::Slot { name: decoded });
   }
 
   // Route Groups – shorthand form (`(group)`)
   if dir_name.starts_with(ROUTE_GROUP_START) && dir_name.ends_with(ROUTE_GROUP_END) {
-    return Ok(SegmentEffect::AlwaysMatch);
+    return Ok(SegmentEffect::Group);
+  }
+
+  // Empty segments (`_`)
+  if dir_name.starts_with(EMPTY_SEGMENT) && dir_name.len() == 1 {
+    return Ok(SegmentEffect::EmptySegment);
   }
 
   let sequences = resolve_url_matcher_sequences(dir_name)?;
@@ -89,7 +95,7 @@ pub fn resolve_segment_effect(dir_name: &str) -> Result<SegmentEffect, String> {
 
     if matches!(arity, DynamicSequenceArity::Exact(0)) {
       // Sequence with arity 0 makes the segment AlwaysMatch
-      return Ok(SegmentEffect::AlwaysMatch);
+      return Ok(SegmentEffect::Group);
     }
   }
 
@@ -129,7 +135,7 @@ fn resolve_url_matcher_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequenc
         }
 
         if special_char == SpecialChar::EscapeSequenceStart {
-          prefix.push(decode_percent_encoding(chars.next(), chars.next(), dir_name)?);
+          prefix.push_str(&validate_escape_sequence(chars.next(), chars.next())?);
           continue;
         }
 
@@ -261,7 +267,7 @@ fn resolve_url_matcher_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequenc
         };
 
         if special_char == SpecialChar::EscapeSequenceStart {
-          suffix.push(decode_percent_encoding(chars.next(), chars.next(), dir_name)?);
+          suffix.push_str(&validate_escape_sequence(chars.next(), chars.next())?);
           continue;
         }
 
@@ -289,25 +295,25 @@ fn resolve_url_matcher_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequenc
   let mut sequences = Vec::with_capacity(3);
 
   if !prefix.is_empty() {
-    sequences.push(UrlMatcherSequence::Literal(prefix));
+    let decoded = decode_percent_encodings(&prefix, 0)?;
+    sequences.push(UrlMatcherSequence::Literal(decoded));
   }
 
   // The second condition is just a sanity check, shouldn't really happen
   if !dyn_var_name.is_empty() && !dyn_arity_lo.is_empty() {
-    sequences.push(UrlMatcherSequence::Dynamic {
-      var_name: dyn_var_name,
-      arity: parse_arity(dyn_arity_lo, dyn_arity_hi, dir_name)?,
-    });
+    sequences
+      .push(UrlMatcherSequence::Dynamic { var_name: dyn_var_name, arity: parse_arity(dyn_arity_lo, dyn_arity_hi)? });
   }
 
   if !suffix.is_empty() {
-    sequences.push(UrlMatcherSequence::Literal(suffix));
+    let decoded = decode_percent_encodings(&suffix, dir_name.len() - suffix.len())?;
+    sequences.push(UrlMatcherSequence::Literal(decoded));
   }
 
   Ok(sequences)
 }
 
-fn parse_arity(lo: String, hi: Option<String>, dir_name: &str) -> Result<DynamicSequenceArity, String> {
+fn parse_arity(lo: String, hi: Option<String>) -> Result<DynamicSequenceArity, String> {
   let lo = lo.parse::<usize>().map_err(|_| arity_unsupported_number_err(lo))?;
 
   let Some(hi) = hi else {
@@ -315,9 +321,9 @@ fn parse_arity(lo: String, hi: Option<String>, dir_name: &str) -> Result<Dynamic
   };
 
   if hi.is_empty() {
-    return Ok(DynamicSequenceArity::Range(lo, None)); 
+    return Ok(DynamicSequenceArity::Range(lo, None));
   }
-  
+
   let hi = hi.parse::<usize>().map_err(|_| arity_unsupported_number_err(hi))?;
 
   if lo > hi {
@@ -331,43 +337,36 @@ fn parse_arity(lo: String, hi: Option<String>, dir_name: &str) -> Result<Dynamic
   Ok(DynamicSequenceArity::Range(lo, Some(hi)))
 }
 
-fn decode_percent_encoding(ch1: Option<char>, ch2: Option<char>, dir_name: &str) -> Result<char, String> {
+/// Validates escape sequence and returns intact. Decoding is done in different phase.
+/// This merely checks that the escape character `%` is followed by two valid hex digits.
+fn validate_escape_sequence(ch1: Option<char>, ch2: Option<char>) -> Result<String, String> {
   let (Some(ch1), Some(ch2)) = (ch1, ch2) else {
-    return Err(
+    return Err(String::from(
       "Incomplete percent-encoding.\r\n\
-      If you want to use a literal percent character, encode it as \"%25\"."
-        .to_string(),
-    );
+      If you want to use a literal percent character, encode it as \"%25\".",
+    ));
   };
+  
+  if !ch1.is_ascii_hexdigit() || !ch2.is_ascii_hexdigit() {
+    return Err(format!(
+      "Invalid percent-encoding \"%{ch1}{ch2}\".\r\n\
+      If you want to use a literal percent character, encode it as \"%25\".",
+    ));
+  }
+  
+  Ok(format!("%{ch1}{ch2}"))
+}
 
-  let hex = format!("{}{}", ch1, ch2);
-
-  let byte = u8::from_str_radix(&hex, 16).map_err(|_| {
+fn decode_percent_encodings(input: &str, offset_from_start: usize) -> Result<String, String> {
+  let decoded = urlencoding::decode(input).map_err(|err| {
     format!(
-      "Invalid percent-encoding \"%{hex}\".\r\n\
-      If you want to use a literal percent character, encode it as \"%25\"."
+      "Invalid percent-encoding in directory name at position {}.\r\n\
+      If you want to use a literal percent character, encode it as \"%25\".",
+      err.utf8_error().valid_up_to() + offset_from_start + 1
     )
   })?;
 
-  Ok(byte as char)
-}
-
-fn decode_percent_encodings(input: &str, dir_name: &str) -> Result<String, String> {
-  let mut output = String::with_capacity(input.len());
-  let mut chars = input.chars();
-
-  while let Some(ch) = chars.next() {
-    if ch != ESCAPE_SEQUENCE_START {
-      output.push(ch);
-      continue;
-    }
-
-    let decoded = decode_percent_encoding(chars.next(), chars.next(), dir_name)?;
-
-    output.push(decoded);
-  }
-
-  Ok(output)
+  Ok(decoded.into())
 }
 
 fn unexpected_special_char_err(ch: char) -> String {

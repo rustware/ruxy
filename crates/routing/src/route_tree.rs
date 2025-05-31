@@ -8,13 +8,20 @@ pub use segment::*;
 #[derive(Debug)]
 pub struct RouteTree {
   pub segments: SegmentMap,
+  pub root_id: Option<String>,
 }
 
 impl RouteTree {
   /// Creates a new RouteTree by parsing the filesystem at the provided path (routes directory). 
   pub fn new(routes_dir: &Path) -> Self {
-    let segments = build_segments(routes_dir, routes_dir.into(), 0, None);
-    RouteTree { segments }
+    let (segments, root_id) = build_segments(routes_dir, routes_dir, 0, None);
+    
+    // Returned self-id is an empty string for invalid segments too, we need to check
+    // the actual presence of the root segment in the HashMap. If no routes exist,
+    // neither does the root segment.
+    let root_id = if segments.contains_key(&root_id) { Some(root_id) } else { None };
+    
+    RouteTree { segments, root_id }
   }
   
   pub fn get_compile_errors(&self) -> Vec<String> {

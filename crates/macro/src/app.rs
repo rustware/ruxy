@@ -1,63 +1,64 @@
-pub mod routes;
+mod errors;
+mod handler;
+mod routes;
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
 use ::ruxy_routing::RouteTree;
 
-use crate::app::routes::{gen_module_declarations, gen_route_match_function};
+use crate::app::errors::render_errors;
+use crate::app::routes::{gen_handler_function, gen_module_declarations};
 use crate::helpers::get_project_dir;
 
 pub fn ruxy_app(_config: impl Into<TokenStream>) -> proc_macro::TokenStream {
   let project_dir = get_project_dir();
   let routes_dir = project_dir.join("src/routes");
+  let cache_dir = project_dir.join(".ruxy");
+
+  let main_fn_ident = Ident::new("main", Span::call_site());
+
+  let build_tag_file = cache_dir.join("BUILD_SCRIPT_RUN_TAG");
+
+  let build_tag = match build_tag_file.exists() {
+    true => quote! { let _ = include_bytes!("../.ruxy/BUILD_SCRIPT_RUN_TAG"); },
+    false => TokenStream::new(),
+  };
 
   let routes = RouteTree::new(&routes_dir);
 
   let module_declarations = gen_module_declarations(&routes);
-  let route_match_function = gen_route_match_function(&routes);
-
-  let main_ident = Ident::new("main", Span::call_site());
-  let app_ident = Ident::new("App", Span::call_site());
+  let handler_function = gen_handler_function(&routes);
 
   let errors = routes.get_compile_errors();
-  let errors_rendered = render_errors(errors);
-  
+  let errors = render_errors(errors);
+
   let output = quote! {
     #module_declarations
 
-    fn #main_ident() {
-      struct #app_ident;
+    fn #main_fn_ident() {
+      // This trick will make the compiler re-expand the macro
+      // when there is a filesystem change inside routes/ dir.
+      #build_tag
 
-      impl ::ruxy::macro_internal::Runtime for App {
-        #route_match_function
+      use ::ruxy::macro_internal as internal;
+
+      struct App;
+
+      impl internal::Server for App {
+        #handler_function
       };
 
-      println!("Hello, world!");
-
-      <#app_ident as ::ruxy::macro_internal::Runtime>::start();
+      <App as internal::Server>::start();
     }
-    
-    #errors_rendered
+
+    // This will output `compile_error!(...)`, listing all collected errors.
+    // This is so that macro can still expand successfully even when errors are
+    // encountered, while the user can see the errors in the IDE or at build time.
+    #errors
   };
 
   output.into()
-}
-
-fn render_errors(errors: Vec<String>) -> TokenStream {
-  if errors.is_empty() {
-    return TokenStream::new();
-  }
-
-  let err_heading = format!(
-    "Ruxy can not compile your application due to the following {count}error{plural}:",
-    count = if errors.len() == 1 { "".to_owned() } else { format!(" {}", errors.len()) },
-    plural = if errors.len() == 1 { "" } else { "s" }
-  );
-
-  let err_message = format!("{}\r\n{}", err_heading, errors.join("\r\n--------\r\n"));
-
-  quote! { compile_error!(#err_message); }
 }
 
 #[cfg(test)]
