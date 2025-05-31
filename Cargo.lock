@@ -748,6 +748,7 @@ dependencies = [
  "quote",
  "rand",
  "ruxy_routing",
+ "ruxy_util",
 ]
 
 [[package]]
@@ -770,6 +771,8 @@ dependencies = [
  "http-body-util",
  "hyper",
  "hyper-util",
+ "proc-macro2",
+ "quote",
  "ruxy_util",
  "tokio",
  "urlencoding",

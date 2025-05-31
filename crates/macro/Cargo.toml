@@ -9,6 +9,7 @@ proc-macro = true
 
 [dependencies]
 ruxy_routing = { path = "../routing" }
+ruxy_util = { path = "../util" }
 
 quote = "1.0.40"
 proc-macro2 = "1.0.95"

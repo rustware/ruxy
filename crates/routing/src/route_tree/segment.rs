@@ -105,7 +105,13 @@ pub enum SegmentEffect {
   Group,
   /// This can "branch" the matching into multiple different streams, rendered into multiple
   /// different slots in this segment's page. The user code will contain a `<Slot name="x" />`.
+  /// Slots have their own separate URLs trees (enabling true parallel routing) which gets
+  /// encoded into URL as query parameters `@<slot name>=<encoded url>`. This means when the
+  /// user refreshes the page, all the slots will get rendered exactly what they've seen before.
+  /// This also enables sharing URLs to the exact current state of the whole page.
   /// Segment with a Slot effect does NOT consume any URL segment and ALWAYS matches.
+  /// Segments nested inside a Slot can consume URL segments as per their own effects, but they
+  /// consume their URL contained in their own query parameter and NOT the main URL.
   Slot {
     /// The name of this slot. To be used in `<Slot name="..." />`
     name: String,
@@ -155,7 +161,8 @@ impl DynamicSequenceArity {
 }
 
 impl SegmentEffect {
-  pub fn closes_previous_segment(&self) -> bool {
+  /// Optional segments are those with lower arity bound set to 0.
+  pub fn is_optional(&self) -> bool {
     match self {
       SegmentEffect::Group => false,
       SegmentEffect::Slot { .. } => false,

@@ -1,14 +1,17 @@
 use std::future::Future;
 use std::net::SocketAddr;
 
-use crate::executor::AsyncExecutor;
-use crate::response::body::ResponseBody;
 use hyper::service::service_fn;
 use hyper::{Response, http};
 use hyper_util::rt::TokioIo;
 use hyper_util::server::conn;
+use proc_macro2::TokenStream;
+use quote::quote;
 use ruxy_util::decode_hex_pair;
 use tokio::net::TcpListener;
+
+use crate::executor::AsyncExecutor;
+use crate::response::body::ResponseBody;
 
 pub type HyperRequest = hyper::Request<hyper::body::Incoming>;
 
@@ -20,7 +23,7 @@ pub trait Server: Send + 'static {
     let rt = tokio::runtime::Runtime::new().unwrap();
 
     rt.block_on(async {
-      // TODO: Make this configurable:
+      // TODO: Make this configurable
       let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
 
       let listener = match TcpListener::bind(addr).await {
@@ -72,7 +75,7 @@ pub trait Server: Send + 'static {
     let mut url_bytes = url.as_bytes().iter();
 
     let mut skip_url_bytes_count = 0;
-    
+
     for prefix_byte in prefix_bytes {
       let url_byte = url_bytes.next()?;
 
@@ -82,7 +85,7 @@ pub trait Server: Send + 'static {
         if prefix_byte != url_byte {
           return None;
         }
-        
+
         continue;
       }
 
@@ -94,14 +97,14 @@ pub trait Server: Send + 'static {
       if prefix_byte != &byte {
         return None;
       }
-      
+
       // Skip the two bytes we just "consumed" from the URL
       skip_url_bytes_count += 2;
     }
 
     Some(&url[prefix.len() + skip_url_bytes_count..])
   }
-  
+
   fn decode_dyn_segment_value(value: &str) -> String {
     match urlencoding::decode(value) {
       Ok(decoded) => decoded.to_string(),
@@ -127,7 +130,7 @@ mod tests {
   }
 
   #[test]
-  fn test_strip_prefix_resolved() {
+  fn test_strip_prefix_decode() {
     // Test empty prefix
     assert_eq!(TestServer::strip_prefix_decode("/path", ""), Some("/path"));
 

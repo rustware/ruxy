@@ -1,7 +1,7 @@
 mod segment;
 
 use std::path::Path;
-
+use proc_macro2::TokenStream;
 pub use segment::*;
 
 /// A complete representation of user application route tree parsed from the file system.
@@ -46,5 +46,13 @@ impl RouteTree {
     });
 
     errors.flatten().collect()
+  }
+  
+  pub fn get_root_segment(&self) -> Option<&RouteSegment> {
+    let Some(root_id) = &self.root_id else {
+      return None;
+    };
+
+    self.segments.get(root_id)
   }
 }
