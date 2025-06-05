@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 /// Ruxy's implementation of Radix Trie.
 #[derive(Debug, Clone)]
 pub struct RadixTrie<Item> where Item: Clone {
