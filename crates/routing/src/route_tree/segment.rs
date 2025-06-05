@@ -160,6 +160,12 @@ impl DynamicSequenceArity {
   }
 }
 
+impl Default for DynamicSequenceArity {
+  fn default() -> Self {
+    DynamicSequenceArity::Exact(1)
+  }
+}
+
 impl SegmentEffect {
   /// Optional segments are those with lower arity bound set to 0.
   pub fn is_optional(&self) -> bool {
@@ -217,19 +223,6 @@ impl RouteSegment {
         sequences.first()?.get_literal()
       },
       _ => None,
-    }
-  }
-  
-  pub fn is_dynamic(&self) -> bool {
-    match &self.effect {
-      SegmentEffect::UrlMatcher { sequences } => {
-        if let Some(sequence) = sequences.first() {
-          return sequence.get_literal().is_none()
-        }
-        
-        sequences.len() > 1
-      },
-      _ => false,
     }
   }
 }

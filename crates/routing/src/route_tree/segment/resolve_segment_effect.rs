@@ -64,7 +64,7 @@ impl SpecialChar {
 pub fn resolve_segment_effect(dir_name: &str) -> Result<SegmentEffect, String> {
   // Named Slots for Parallel Routes (`@my_slot`)
   if let Some(slot_name) = dir_name.strip_prefix(SLOT_START) {
-    let decoded = decode_percent_encodings(slot_name, 1)?;
+    let decoded = decode_percent_encodings(slot_name, 1, false)?;
     return Ok(SegmentEffect::Slot { name: decoded });
   }
 
@@ -295,18 +295,18 @@ fn resolve_url_matcher_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequenc
   let mut sequences = Vec::with_capacity(3);
 
   if !prefix.is_empty() {
-    let decoded = decode_percent_encodings(&prefix, 0)?;
+    let decoded = decode_percent_encodings(&prefix, 0, true)?;
     sequences.push(UrlMatcherSequence::Literal(decoded));
   }
 
-  // The second condition is just a sanity check, shouldn't really happen
+  // The second condition is just a sanity check, shouldn't really be false
   if !dyn_var_name.is_empty() && !dyn_arity_lo.is_empty() {
-    sequences
-      .push(UrlMatcherSequence::Dynamic { var_name: dyn_var_name, arity: parse_arity(dyn_arity_lo, dyn_arity_hi)? });
+    let arity = parse_arity(dyn_arity_lo, dyn_arity_hi)?;
+    sequences.push(UrlMatcherSequence::Dynamic { var_name: dyn_var_name, arity });
   }
 
   if !suffix.is_empty() {
-    let decoded = decode_percent_encodings(&suffix, dir_name.len() - suffix.len())?;
+    let decoded = decode_percent_encodings(&suffix, dir_name.len() - suffix.len(), true)?;
     sequences.push(UrlMatcherSequence::Literal(decoded));
   }
 
@@ -346,18 +346,19 @@ fn validate_escape_sequence(ch1: Option<char>, ch2: Option<char>) -> Result<Stri
       If you want to use a literal percent character, encode it as \"%25\".",
     ));
   };
-  
+
   if !ch1.is_ascii_hexdigit() || !ch2.is_ascii_hexdigit() {
     return Err(format!(
       "Invalid percent-encoding \"%{ch1}{ch2}\".\r\n\
       If you want to use a literal percent character, encode it as \"%25\".",
     ));
   }
-  
+
   Ok(format!("%{ch1}{ch2}"))
 }
 
-fn decode_percent_encodings(input: &str, offset_from_start: usize) -> Result<String, String> {
+/// Set `keep_slashes` to `true` to keep all slashes URL-encoded, while the rest of the input decoded.
+fn decode_percent_encodings(input: &str, offset_from_start: usize, keep_slashes: bool) -> Result<String, String> {
   let decoded = urlencoding::decode(input).map_err(|err| {
     format!(
       "Invalid percent-encoding in directory name at position {}.\r\n\
@@ -366,6 +367,11 @@ fn decode_percent_encodings(input: &str, offset_from_start: usize) -> Result<Str
     )
   })?;
 
+  if keep_slashes {
+    // Encode the slashes again
+    return Ok(decoded.to_string().replace('/', "%2F"));
+  }
+  
   Ok(decoded.into())
 }
 

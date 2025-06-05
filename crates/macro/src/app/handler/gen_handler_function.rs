@@ -40,19 +40,11 @@ fn create_radix_trie(config: &AppConfig, routes: &RouteTree, segment: &RouteSegm
 
   match &segment.effect {
     SegmentEffect::EmptySegment => self_prefix.push('/'),
-    SegmentEffect::UrlMatcher { sequences } => {
-      // This should always match (there can't be 0 sequences)
-      if let Some(sequence) = sequences.first() {
-        if let Some(literal) = sequence.get_literal() {
-          self_prefix.push('/');
-          self_prefix.push_str(literal);
-
-          if sequences.len() > 1 {
-            is_dynamic_segment = true;
-          }
-        } else {
-          is_dynamic_segment = true;
-        }
+    SegmentEffect::UrlMatcher { .. } => {
+      if let Some(literal) = segment.get_literal() {
+        self_prefix = literal.to_string();
+      } else {
+        is_dynamic_segment = true;
       }
     }
     _ => {}
@@ -91,32 +83,109 @@ fn create_radix_trie(config: &AppConfig, routes: &RouteTree, segment: &RouteSegm
   }
 
   if is_dynamic_segment {
-    // Dynamic segment is a target on its own, we'll wrap the nested trie and return
-    let target = gen_dynamic_segment_matcher(config, routes, segment, trie);
-    return RadixTrie::from([(&self_prefix, target)]);
+    // Wrap the whole trie with the dynamic segment target, which will
+    // render the "wrapped" trie inside its own matching logic
+    trie = create_dynamic_segment_trie(config, routes, segment, trie);
   }
 
   // We apply this segment's prefix to the trie here at the end, as some special targets
-  // needs to wrap the unprefixed trie with custom code (check dynamic segments above).
+  // needs to wrap the unprefixed trie with its own trie (check dynamic segment handling)
   trie.with_prefix(&self_prefix)
 }
 
-fn gen_dynamic_segment_matcher(
-  config: &AppConfig,
-  routes: &RouteTree,
-  segment: &RouteSegment,
-  subtrie: Trie,
-) -> TokenStream {
-  let subtrie = render_trie(&subtrie);
+/// Returns (<should prefix with slash>, TokenStream).
+/// If the first value of the tuple is `true`, an additional slash should be added to the prefix.
+fn create_dynamic_segment_trie(config: &AppConfig, routes: &RouteTree, segment: &RouteSegment, subtrie: Trie) -> Trie {
+  let SegmentEffect::UrlMatcher { sequences } = &segment.effect else {
+    unreachable!("This function only ever receives UrlMatcher-effect segments");
+  };
 
-  // TODO
-  
-  // Dynamic segment matching
-  quote! {
-    if path == "Dynamic segment matching logic" {
-      #subtrie
+  let mut segment_prefix: String = String::new();
+  let mut segment_suffix: String = String::new();
+
+  let mut var_name: &String = &String::new();
+  let mut arity: &DynamicSequenceArity = &Default::default();
+
+  for (seq_index, sequence) in sequences.iter().enumerate() {
+    match sequence {
+      UrlMatcherSequence::Literal(literal) => {
+        if seq_index == 0 {
+          segment_prefix.push_str(literal);
+        } else {
+          segment_suffix.push_str(literal);
+        }
+      }
+      UrlMatcherSequence::Dynamic { var_name: v, arity: a } => {
+        var_name = v;
+        arity = a;
+      }
     }
   }
+
+  let subtrie = render_trie(&subtrie);
+
+  let path_param_value_ident = format!("path_param_{}", segment.hex);
+  let path_param_value_ident = Ident::new(&path_param_value_ident, Span::mixed_site());
+
+  let path_param_value_type = arity.get_rust_type();
+
+  let mut prefix = String::new();
+  
+  let target = match arity {
+    DynamicSequenceArity::Exact(1) => {
+      prefix.push('/');
+      prefix.push_str(&segment_prefix);
+
+      if segment_suffix.is_empty() {
+        quote! {
+          let (segment, path) = path.split_once('/').unwrap_or((path, ""));
+          let #path_param_value_ident: #path_param_value_type = Self::decode_dyn_segment_value(val);
+          #subtrie
+        }
+      } else {
+        quote! {
+          if let Some((val, path)) = Self::strip_segment_suffix(segment, #segment_suffix) {
+            let #path_param_value_ident: #path_param_value_type = Self::decode_dyn_segment_value(val);
+            #subtrie
+          }
+        }
+      }
+    }
+    DynamicSequenceArity::Exact(count) => {
+      assert!(*count > 1);
+
+      prefix.push('/');
+
+      // TODO: Finish this
+      
+      quote! {
+        let mut #path_param_value_ident: #path_param_value_type = [const { String::new() }; #count];
+
+        let mut path = path;
+        let mut matched = true;
+
+        for segment_idx in 0..#count {
+          if rest.is_empty() {
+            matched = false;
+            break;
+          }
+
+          let segment = &path[0..path.find('/').unwrap_or(path.len())];
+          #path_param_value_ident[segment_idx] = Self::decode_dyn_segment_value(segment);
+
+          path = &path[segment.len()..];
+        }
+
+        if matched { #subtrie }
+      }
+    }
+    DynamicSequenceArity::Range(min, max) => {
+      // TODO: Finish this
+      quote! {}
+    }
+  };
+
+  RadixTrie::from([(prefix, target)])
 }
 
 fn render_trie(trie: &Trie) -> TokenStream {
@@ -126,7 +195,7 @@ fn render_trie(trie: &Trie) -> TokenStream {
       let children = render_trie(children);
 
       quote! {
-        if let Some(path) = Self::strip_prefix_decode(path, #prefix) {
+        if let Some(path) = Self::strip_prefix(path, #prefix) {
           #children
         }
       }
@@ -280,7 +349,7 @@ fn gen_url_matcher_sequence_condition(
 
   match sequence {
     UrlMatcherSequence::Literal(literal) => {
-      quote! { if let Some(url) = Self::strip_prefix_decode(url, #literal) { #inner } }
+      quote! { if let Some(url) = Self::strip_prefix(url, #literal) { #inner } }
     }
     UrlMatcherSequence::Dynamic { arity, .. } => {
       let url_param_value_ident = format!("url_param_{}", segment.hex);
