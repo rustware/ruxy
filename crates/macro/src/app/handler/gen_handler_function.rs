@@ -107,16 +107,6 @@ fn gen_dynamic_segment_matcher(
   segment: &RouteSegment,
   subtrie: Trie,
 ) -> TokenStream {
-  let mut children: Vec<&RouteSegment> = Vec::new();
-
-  for child in &segment.children {
-    let Some(child_segment) = routes.segments.get(child) else {
-      continue;
-    };
-
-    children.push(child_segment);
-  }
-
   let subtrie = render_trie(&subtrie);
 
   // Dynamic segment matching
