@@ -96,6 +96,8 @@ fn create_radix_trie(config: &AppConfig, routes: &RouteTree, segment: &RouteSegm
     return RadixTrie::from([(&self_prefix, target)]);
   }
 
+  // We apply this segment's prefix to the trie here at the end, as some special targets
+  // needs to wrap the unprefixed trie with custom code (check dynamic segments above).
   trie.with_prefix(&self_prefix)
 }
 
