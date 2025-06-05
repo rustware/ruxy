@@ -167,7 +167,7 @@ impl SegmentEffect {
       SegmentEffect::Group => false,
       SegmentEffect::Slot { .. } => false,
       SegmentEffect::UrlMatcher { .. } => {
-        let Some(DynamicSequenceArity::Range(lower, ..)) = self.get_dynamice_sequence_arity() else {
+        let Some(DynamicSequenceArity::Range(lower, ..)) = self.get_dynamic_sequence_arity() else {
           return true;
         };
         
@@ -177,7 +177,7 @@ impl SegmentEffect {
     }
   }
 
-  pub fn get_dynamice_sequence_arity(&self) -> Option<&DynamicSequenceArity> {
+  pub fn get_dynamic_sequence_arity(&self) -> Option<&DynamicSequenceArity> {
     match self {
       SegmentEffect::UrlMatcher { sequences } => {
         sequences.iter().find_map(|seq| {
@@ -189,6 +189,47 @@ impl SegmentEffect {
         })
       },
       _ => None,
+    }
+  }
+}
+
+impl UrlMatcherSequence {
+  /// Returns Some(literal) if this sequence is a literal sequence.
+  /// Otherwise returns None.
+  pub fn get_literal(&self) -> Option<&String> {
+    match self {
+      UrlMatcherSequence::Literal(literal) => Some(literal),
+      _ => None
+    }
+  }
+}
+
+impl RouteSegment {
+  /// Returns Some(literal) if this segment is a UrlMatcher segment with
+  /// a single literal sequence. Otherwise returns None.
+  pub fn get_literal(&self) -> Option<&String> {
+    match &self.effect {
+      SegmentEffect::UrlMatcher { sequences } => {
+        if sequences.len() > 1 {
+          return None;
+        }
+
+        sequences.first()?.get_literal()
+      },
+      _ => None,
+    }
+  }
+  
+  pub fn is_dynamic(&self) -> bool {
+    match &self.effect {
+      SegmentEffect::UrlMatcher { sequences } => {
+        if let Some(sequence) = sequences.first() {
+          return sequence.get_literal().is_none()
+        }
+        
+        sequences.len() > 1
+      },
+      _ => false,
     }
   }
 }

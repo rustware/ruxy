@@ -6,216 +6,272 @@ use ::ruxy_routing::{
   DynamicSequenceArity, RequestHandler, RouteSegment, RouteTree, SegmentEffect, UrlMatcherSequence,
 };
 use ruxy_routing::TrailingSlashConfig;
-use ruxy_util::RadixTrie;
+use ruxy_util::{RadixTrie, RadixTrieNode};
 
-pub fn gen_handler_function(_config: &AppConfig, routes: &RouteTree) -> TokenStream {
-  let root_segment = match routes.get_root_segment() {
-    Some(root) => gen_segment(routes, root),
-    None => TokenStream::new(),
-  };
+type Trie = RadixTrie<TokenStream>;
 
+pub fn gen_handler_function(config: &AppConfig, routes: &RouteTree) -> TokenStream {
+  let matchers = gen_matchers(config, routes);
   let global_404 = gen_global_404();
 
   quote! {
     async fn handler(request: internal::HyperRequest) -> internal::HandlerResult {
-      let url = request.uri().path();
+      let path = request.uri().path();
 
-      #root_segment
+      #matchers
       #global_404
     }
   }
 }
 
-fn gen_segment(routes: &RouteTree, segment: &RouteSegment) -> TokenStream {
-  let match_self = segment.route_handler.as_ref().map(|handler| {
-    let responder = gen_segment_responder(routes, segment, handler);
-
-    quote! {
-      if url.is_empty() || url == "/" {
-        // Segment has been targeted for producing response
-        #responder
-      }
-    }
-  });
-
-  let children = get_flat_children(routes, segment);
-
-  let mut empty_url_segments: Vec<TokenStream> = Vec::new();
-  let mut static_prefix_segments: Vec<(&str, &RouteSegment)> = Vec::new();
-  let mut dynamic_optional_segments: Vec<&RouteSegment> = Vec::new();
-  let mut dynamic_required_segments: Vec<&RouteSegment> = Vec::new();
-  let mut slots: Vec<&RouteSegment> = Vec::new();
-
-  for child in children {
-    match &child.effect {
-      SegmentEffect::UrlMatcher { sequences } => {
-        if let Some(UrlMatcherSequence::Literal(literal)) = sequences.first() {
-          static_prefix_segments.push((literal, child));
-        } else if child.effect.is_optional() {
-          dynamic_optional_segments.push(child);
-        } else {
-          dynamic_required_segments.push(child);
-        }
-      }
-      SegmentEffect::Slot { .. } => {
-        slots.push(child);
-      }
-      SegmentEffect::EmptySegment => {
-        empty_url_segments.push(gen_segment(routes, child));
-      }
-      SegmentEffect::Group => {
-        // No-op. Groups are already recursively flattened.
-      }
-    };
-  }
-
-  let static_prefix_matchers = gen_static_prefix_matcher(routes, static_prefix_segments);
-  
-  let dynamic_optional_segment_matchers =
-    dynamic_optional_segments.iter().map(|segment| gen_dynamic_segment_matcher(segment));
-  let dynamic_optional_segment_matchers = quote! { #(#dynamic_optional_segment_matchers)* };
-  
-  let dynamic_required_segment_matchers =
-    dynamic_required_segments.iter().map(|segment| gen_dynamic_segment_matcher(segment));
-  let dynamic_required_segment_matchers = quote! { #(#dynamic_required_segment_matchers)* };
-
-  // TODO: Sort children by the match specificity:
-  //  1. Static segments
-  //  2. Dynamic segments: Exact arity (from lowest to highest)
-  //  3. Dynamic segments: Range arity: Upper specified (from lowest upper to highest upper)
-  //  4. Dynamic segments: Range arity: Upper unspecified (from lowest lower to highest lower)
-  //  5. Group Segments
-
-  let empty_url_segments = gen_empty_url_segments(empty_url_segments);
-
-  let mut separated_segment_matchers = quote! {
-    #empty_url_segments
-    #static_prefix_matchers
-    #dynamic_required_segment_matchers
-    #dynamic_optional_segment_matchers
+fn gen_matchers(config: &AppConfig, routes: &RouteTree) -> TokenStream {
+  let Some(root_segment) = routes.get_root_segment() else {
+    return TokenStream::new();
   };
-  
-  if !separated_segment_matchers.is_empty() {
-    separated_segment_matchers = quote! {
-      if let Some(url) = url.strip_prefix('/') {
-        #separated_segment_matchers
-      }
-    };
-  }
-  
-  quote! {
-    #match_self
 
-    #separated_segment_matchers
-  }
+  let trie = create_radix_trie(config, routes, root_segment);
+
+  render_trie(&trie)
 }
 
-fn gen_static_prefix_matcher(routes: &RouteTree, segments: Vec<(&str, &RouteSegment)>) -> TokenStream {
-  let trie = RadixTrie::build(segments);
-  let children = gen_static_prefix_matcher_node(routes, &trie);
+fn create_radix_trie(config: &AppConfig, routes: &RouteTree, segment: &RouteSegment) -> Trie {
+  let mut self_prefix = String::new();
+  let mut is_dynamic_segment = false;
 
-  quote! { #children }
-}
+  match &segment.effect {
+    SegmentEffect::EmptySegment => self_prefix.push('/'),
+    SegmentEffect::UrlMatcher { sequences } => {
+      // This should always match (there can't be 0 sequences)
+      if let Some(sequence) = sequences.first() {
+        if let Some(literal) = sequence.get_literal() {
+          self_prefix.push('/');
+          self_prefix.push_str(literal);
 
-fn gen_static_prefix_matcher_node(routes: &RouteTree, children: &Vec<RadixTrie<&RouteSegment>>) -> TokenStream {
-  let matchers = children.iter().map(|node| {
-    match node {
-      RadixTrie::Prefix(prefix, children) => {
-        let children = gen_static_prefix_matcher_node(routes, children);
-
-        quote! {
-          if let Some(url) = Self::strip_prefix_decode(url, #prefix) {
-            #children
+          if sequences.len() > 1 {
+            is_dynamic_segment = true;
           }
+        } else {
+          is_dynamic_segment = true;
         }
       }
-      RadixTrie::Item(segment) => {
-        if let SegmentEffect::UrlMatcher { sequences, .. } = &segment.effect {
-          if sequences.len() == 1 {
-            // Skip dynamic matching, this segment's UrlMatcher has only a single literal sequence
-            return gen_segment(routes, segment);
-          }
-        }
-
-        gen_dynamic_segment_matcher(segment)
-      }
     }
-  });
+    _ => {}
+  };
 
-  quote! { #(#matchers)* }
-}
-
-fn gen_dynamic_segment_matcher(segment: &RouteSegment) -> TokenStream {
-  // There is no static prefix, that's already handled by the static prefix matcher
-  // At the end, call `gen_next_segment(segment)` to move to the next level
-  quote! { todo!("dynamic segment matcher here") }
-}
-
-fn gen_empty_url_segments(segments: Vec<TokenStream>) -> TokenStream {
-  if segments.is_empty() { return TokenStream::new(); }
-  
-  quote! {
-    if url.is_empty() || url.starts_with('/') {
-      let url = url.strip_prefix('/').unwrap_or(url);
-      #(#segments)*
-    }
-  }
-}
-
-// Flattens children from Route Groups recursively
-fn get_flat_children<'a>(routes: &'a RouteTree, segment: &RouteSegment) -> Vec<&'a RouteSegment> {
-  let mut children = Vec::new();
+  let mut trie = RadixTrie::new();
 
   for child in &segment.children {
-    let Some(child_segment) = routes.segments.get(child) else { continue };
-
-    if let SegmentEffect::Group = child_segment.effect {
-      children.extend(get_flat_children(routes, child_segment));
+    let Some(child_segment) = routes.segments.get(child) else {
       continue;
+    };
+
+    let child_trie = create_radix_trie(config, routes, child_segment);
+
+    trie.extend(child_trie);
+  }
+
+  if let Some(handler) = &segment.route_handler {
+    let mut prefix = self_prefix.clone();
+
+    if matches!(config.trailing_slash, TrailingSlashConfig::RequirePresent) || segment.is_root {
+      prefix.push('/');
     }
+
+    let end_of_path_cond = match (segment.is_root, &config.trailing_slash) {
+      (false, TrailingSlashConfig::Ignore) => quote! { path.is_empty() || path == "/" },
+      // We're handling trailing slash for "RequirePresent" as part of the prefix.
+      // Root segment is also handled as part of the prefix.
+      _ => quote! { path.is_empty() },
+    };
+
+    let target = gen_segment_responder(config, routes, segment, handler);
+    let target = quote! { if #end_of_path_cond { #target } };
+
+    trie.insert("", target);
+  }
+
+  if is_dynamic_segment {
+    // Dynamic segment is a target on its own, we'll wrap the nested trie and return
+    let target = gen_dynamic_segment_matcher(config, routes, segment, trie);
+    return RadixTrie::from([(&self_prefix, target)]);
+  }
+
+  trie.with_prefix(&self_prefix)
+}
+
+fn gen_dynamic_segment_matcher(
+  config: &AppConfig,
+  routes: &RouteTree,
+  segment: &RouteSegment,
+  subtrie: Trie,
+) -> TokenStream {
+  let mut children: Vec<&RouteSegment> = Vec::new();
+
+  for child in &segment.children {
+    let Some(child_segment) = routes.segments.get(child) else {
+      continue;
+    };
 
     children.push(child_segment);
   }
 
-  children
+  let subtrie = render_trie(&subtrie);
+
+  // Dynamic segment matching
+  quote! {
+    if path == "Dynamic segment matching logic" {
+      #subtrie
+    }
+  }
 }
 
-fn _gen_segment(routes: &RouteTree, id: &str) -> TokenStream {
-  let Some(segment) = routes.segments.get(id) else {
-    return TokenStream::new();
-  };
+fn render_trie(trie: &Trie) -> TokenStream {
+  let items = trie.to_nodes().iter().map(|node| match node {
+    RadixTrieNode::Item(item) => quote! { #item },
+    RadixTrieNode::Prefix(prefix, children) => {
+      let children = render_trie(children);
 
-  let match_self = segment.route_handler.as_ref().map(|handler| {
-    let responder = gen_segment_responder(routes, segment, handler);
-
-    quote! {
-      // TODO: Make the trailing slash matching configurable
-      if url.is_empty() || url == "/" {
-        // Segment has been targeted for producing response
-        #responder
+      quote! {
+        if let Some(path) = Self::strip_prefix_decode(path, #prefix) {
+          #children
+        }
       }
     }
   });
 
-  let match_children = gen_segment_children(segment, routes);
+  quote! { #(#items)* }
+}
 
-  let inner_matchers = quote! {
-    #match_self
-    #match_children
-  };
+fn gen_segment_responder(
+  _config: &AppConfig,
+  routes: &RouteTree,
+  segment: &RouteSegment,
+  handler: &RequestHandler,
+) -> TokenStream {
+  let identifier = &segment.identifier;
 
-  // Wrap `inner_matchers` in URL matching conditions so that it's only executed if the segment itself matches
-  match &segment.effect {
-    SegmentEffect::Group => inner_matchers,
-    SegmentEffect::Slot { .. } => inner_matchers,
-    SegmentEffect::UrlMatcher { sequences } => {
-      gen_url_matcher_sequence_condition(segment, sequences, 0, inner_matchers)
+  let path_params: Vec<TokenStream> = extract_idents_for_segment(segment, routes);
+
+  quote! {
+    // let mut response = hyper::Response::builder();
+    //
+    // response = response.status(200);
+    // response = response.header("Content-Type", "text/html");
+    //
+    // let mut body = internal::ResponseBody::new();
+    //
+    // body.push(internal::Bytes::from("<!DOCTYPE html>"));
+    // body.push(internal::Bytes::from("<html>"));
+    // body.push(internal::Bytes::from("<head>"));
+    // body.push(internal::Bytes::from("<meta charset=\"utf-8\" />"));
+    // body.push(internal::Bytes::from("</head>"));
+    // body.push(internal::Bytes::from("<body>"));
+    // body.push(internal::Bytes::from("<div>Matched handler:</div>"));
+    // body.push(internal::Bytes::from("<div style=\"color: red;\">"));
+    // body.push(internal::Bytes::from(#identifier));
+    // body.push(internal::Bytes::from("</div>"));
+    // body.push(internal::Bytes::from("<div style=\"margin-top: 16px;\">Path params:</div>"));
+    // body.push(internal::Bytes::from("<div style=\"color: darkgreen;\">"));
+    // #(#path_params)*
+    // body.push(internal::Bytes::from("</div>"));
+    // body.push(internal::Bytes::from("</body>"));
+    // body.push(internal::Bytes::from("</html>"));
+    //
+    // return internal::HandlerResult {
+    //   response: response.body(body)
+    // };
+    return "Handler for" + #identifier;
+  }
+}
+
+fn extract_idents_for_segment(segment: &RouteSegment, routes: &RouteTree) -> Vec<TokenStream> {
+  let mut v = Vec::new();
+
+  if let SegmentEffect::UrlMatcher { sequences } = &segment.effect {
+    let dyn_var_name = sequences.iter().find_map(|s| {
+      let UrlMatcherSequence::Dynamic { var_name, .. } = s else {
+        return None;
+      };
+      Some(var_name)
+    });
+
+    if let Some(dyn_var_name) = dyn_var_name {
+      let dyn_var_ident = format!("path_param_{}", segment.hex);
+      let dyn_var_ident = Ident::new(&dyn_var_ident, Span::mixed_site());
+
+      v.push(quote! {
+        body.push(internal::Bytes::from("<div>"));
+        let formatted = format!("{}: {:?}", #dyn_var_name, #dyn_var_ident);
+        body.push(internal::Bytes::from(formatted));
+        body.push(internal::Bytes::from("</div>"));
+      });
     }
-    SegmentEffect::EmptySegment => {
-      quote! { if url.starts_with('/') { #inner_matchers } }
+  }
+
+  if let Some(parent) = &segment.parent {
+    if let Some(parent) = routes.segments.get(parent) {
+      v.extend(extract_idents_for_segment(parent, routes))
+    }
+  }
+
+  v
+}
+
+fn gen_global_404() -> TokenStream {
+  quote! {
+    let mut response = hyper::Response::builder();
+
+    response = response.status(404);
+    response = response.header("Content-Type", "text/plain");
+
+    let mut body = internal::ResponseBody::new();
+
+    body.push(internal::Bytes::from("Not Found"));
+
+    internal::HandlerResult {
+      response: response.body(body)
     }
   }
 }
+
+// ---------------------------------- OLD ----------------------------------
+
+// fn _gen_segment(routes: &RouteTree, id: &str) -> TokenStream {
+//   let Some(segment) = routes.segments.get(id) else {
+//     return TokenStream::new();
+//   };
+//
+//   let match_self = segment.route_handler.as_ref().map(|handler| {
+//     let responder = gen_segment_responder(routes, segment, handler);
+//
+//     quote! {
+//       // TODO: Make the trailing slash matching configurable
+//       if url.is_empty() || url == "/" {
+//         // Segment has been targeted for producing response
+//         #responder
+//       }
+//     }
+//   });
+//
+//   let match_children = gen_segment_children(segment, routes);
+//
+//   let inner_matchers = quote! {
+//     #match_self
+//     #match_children
+//   };
+//
+//   // Wrap `inner_matchers` in URL matching conditions so that it's only executed if the segment itself matches
+//   match &segment.effect {
+//     SegmentEffect::Group => inner_matchers,
+//     SegmentEffect::Slot { .. } => inner_matchers,
+//     SegmentEffect::UrlMatcher { sequences } => {
+//       gen_url_matcher_sequence_condition(segment, sequences, 0, inner_matchers)
+//     }
+//     SegmentEffect::EmptySegment => {
+//       quote! { if url.starts_with('/') { #inner_matchers } }
+//     }
+//   }
+// }
 
 fn gen_url_matcher_sequence_condition(
   segment: &RouteSegment,
@@ -386,91 +442,5 @@ fn gen_segment_children(segment: &RouteSegment, routes: &RouteTree) -> TokenStre
   quote! {
     let url = url.strip_prefix('/').unwrap_or(url);
     // #(#children)*
-  }
-}
-
-fn gen_segment_responder(routes: &RouteTree, segment: &RouteSegment, handler: &RequestHandler) -> TokenStream {
-  let identifier = &segment.identifier;
-
-  let path_params: Vec<TokenStream> = extract_idents_for_segment(segment, routes);
-
-  quote! {
-    let mut response = hyper::Response::builder();
-
-    response = response.status(200);
-    response = response.header("Content-Type", "text/html");
-
-    let mut body = internal::ResponseBody::new();
-
-    body.push(internal::Bytes::from("<!DOCTYPE html>"));
-    body.push(internal::Bytes::from("<html>"));
-    body.push(internal::Bytes::from("<head>"));
-    body.push(internal::Bytes::from("<meta charset=\"utf-8\" />"));
-    body.push(internal::Bytes::from("</head>"));
-    body.push(internal::Bytes::from("<body>"));
-    body.push(internal::Bytes::from("<div>Matched handler:</div>"));
-    body.push(internal::Bytes::from("<div style=\"color: red;\">"));
-    body.push(internal::Bytes::from(#identifier));
-    body.push(internal::Bytes::from("</div>"));
-    body.push(internal::Bytes::from("<div style=\"margin-top: 16px;\">Path params:</div>"));
-    body.push(internal::Bytes::from("<div style=\"color: darkgreen;\">"));
-    #(#path_params)*
-    body.push(internal::Bytes::from("</div>"));
-    body.push(internal::Bytes::from("</body>"));
-    body.push(internal::Bytes::from("</html>"));
-
-    return internal::HandlerResult {
-      response: response.body(body)
-    };
-  }
-}
-
-fn extract_idents_for_segment(segment: &RouteSegment, routes: &RouteTree) -> Vec<TokenStream> {
-  let mut v = Vec::new();
-
-  if let SegmentEffect::UrlMatcher { sequences } = &segment.effect {
-    let dyn_var_name = sequences.iter().find_map(|s| {
-      let UrlMatcherSequence::Dynamic { var_name, .. } = s else {
-        return None;
-      };
-      Some(var_name)
-    });
-
-    if let Some(dyn_var_name) = dyn_var_name {
-      let dyn_var_ident = format!("url_param_{}", segment.hex);
-      let dyn_var_ident = Ident::new(&dyn_var_ident, Span::mixed_site());
-
-      v.push(quote! {
-        body.push(internal::Bytes::from("<div>"));
-        let formatted = format!("{}: {:?}", #dyn_var_name, #dyn_var_ident);
-        body.push(internal::Bytes::from(formatted));
-        body.push(internal::Bytes::from("</div>"));
-      });
-    }
-  }
-
-  if let Some(parent) = &segment.parent {
-    if let Some(parent) = routes.segments.get(parent) {
-      v.extend(extract_idents_for_segment(parent, routes))
-    }
-  }
-
-  v
-}
-
-fn gen_global_404() -> TokenStream {
-  quote! {
-    let mut response = hyper::Response::builder();
-
-    response = response.status(404);
-    response = response.header("Content-Type", "text/plain");
-
-    let mut body = internal::ResponseBody::new();
-
-    body.push(internal::Bytes::from("Not Found"));
-
-    internal::HandlerResult {
-      response: response.body(body)
-    }
   }
 }
