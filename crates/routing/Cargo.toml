@@ -4,9 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+ruxy_util = { path = "../util" }
+
 proc-macro2 = "1.0.95"
 quote = "1.0.40"
-urlencoding = "2.1.3"
 
 [lints]
 workspace = true

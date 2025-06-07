@@ -6,7 +6,7 @@ use ::ruxy_routing::{
   DynamicSequenceArity, RequestHandler, RouteSegment, RouteTree, SegmentEffect, UrlMatcherSequence,
 };
 use ruxy_routing::TrailingSlashConfig;
-use ruxy_util::{RadixTrie, RadixTrieNode};
+use ruxy_util::radix_trie::{RadixTrie, RadixTrieNode};
 
 type Trie = RadixTrie<TokenStream>;
 
@@ -32,6 +32,12 @@ fn gen_matchers(config: &AppConfig, routes: &RouteTree) -> TokenStream {
   let trie = create_radix_trie(config, routes, root_segment);
 
   render_trie(&trie)
+
+  // let debug = trie.to_flat().iter().map(|i| { let a = i.0.clone(); quote! { String::from(#a); }}).collect::<Vec<_>>();
+  //
+  // quote! {
+  //   #(#debug)*
+  // }
 }
 
 fn create_radix_trie(config: &AppConfig, routes: &RouteTree, segment: &RouteSegment) -> Trie {
@@ -42,11 +48,13 @@ fn create_radix_trie(config: &AppConfig, routes: &RouteTree, segment: &RouteSegm
     SegmentEffect::EmptySegment => self_prefix.push('/'),
     SegmentEffect::UrlMatcher { .. } => {
       if let Some(literal) = segment.get_literal() {
-        self_prefix = literal.to_string();
+        self_prefix.push('/');
+        self_prefix.push_str(literal);
       } else {
         is_dynamic_segment = true;
       }
     }
+    // TODO: Custom Match segments
     _ => {}
   };
 
@@ -79,7 +87,9 @@ fn create_radix_trie(config: &AppConfig, routes: &RouteTree, segment: &RouteSegm
     let target = gen_segment_responder(config, routes, segment, handler);
     let target = quote! { if #end_of_path_cond { #target } };
 
-    trie.insert("", target);
+    let key = if segment.is_root { "/" } else { "" };
+
+    trie.insert(key, target);
   }
 
   if is_dynamic_segment {
@@ -130,7 +140,7 @@ fn create_dynamic_segment_trie(config: &AppConfig, routes: &RouteTree, segment: 
   let path_param_value_type = arity.get_rust_type();
 
   let mut prefix = String::new();
-  
+
   let target = match arity {
     DynamicSequenceArity::Exact(1) => {
       prefix.push('/');
@@ -138,26 +148,26 @@ fn create_dynamic_segment_trie(config: &AppConfig, routes: &RouteTree, segment: 
 
       if segment_suffix.is_empty() {
         quote! {
-          let (segment, path) = path.split_once('/').unwrap_or((path, ""));
-          let #path_param_value_ident: #path_param_value_type = Self::decode_dyn_segment_value(val);
+          let (value, path) = Self::split_segment_end(path);
+          let #path_param_value_ident: #path_param_value_type = value.into();
           #subtrie
         }
       } else {
         quote! {
-          if let Some((val, path)) = Self::strip_segment_suffix(segment, #segment_suffix) {
-            let #path_param_value_ident: #path_param_value_type = Self::decode_dyn_segment_value(val);
+          if let Some((value, path)) = Self::strip_segment_suffix(path, #segment_suffix) {
+            let #path_param_value_ident: #path_param_value_type = value.into();
             #subtrie
           }
         }
       }
     }
     DynamicSequenceArity::Exact(count) => {
+      // "Exact(0)" arities are converted to Groups
+      // "Exact(1)" is handled above
       assert!(*count > 1);
 
       prefix.push('/');
 
-      // TODO: Finish this
-      
       quote! {
         let mut #path_param_value_ident: #path_param_value_type = [const { String::new() }; #count];
 
@@ -165,23 +175,90 @@ fn create_dynamic_segment_trie(config: &AppConfig, routes: &RouteTree, segment: 
         let mut matched = true;
 
         for segment_idx in 0..#count {
-          if rest.is_empty() {
-            matched = false;
-            break;
+          // First segment is always matched (slash is part of prefix)
+          if segment_idx != 0 {
+            let Some(rest) = path.strip_prefix('/') else {
+              // No next URL segment to match this route segment
+              matched = false;
+              break;
+            };
+            
+            path = rest;
           }
-
-          let segment = &path[0..path.find('/').unwrap_or(path.len())];
-          #path_param_value_ident[segment_idx] = Self::decode_dyn_segment_value(segment);
-
-          path = &path[segment.len()..];
+          
+          let (value, rest) = Self::split_segment_end(path);
+          #path_param_value_ident[segment_idx] = value.into();
+          path = rest;
         }
 
         if matched { #subtrie }
       }
     }
     DynamicSequenceArity::Range(min, max) => {
-      // TODO: Finish this
-      quote! {}
+      let mut required_segments_loop = TokenStream::new();
+      
+      if *min > 0 {
+        prefix.push('/');
+        
+        required_segments_loop = quote! {
+          for segment_idx in 0..#min {
+            // First segment is always matched (slash is part of prefix)
+            if segment_idx != 0 {
+              let Some(rest) = path.strip_prefix('/') else {
+                // No next URL segment to match this route segment
+                matched = false;
+                break;
+              };
+              
+              path = rest;
+            }
+            
+            let (value, rest) = Self::split_segment_end(path);
+            #path_param_value_ident.0[segment_idx] = value.into();
+            path = rest;
+          }
+        };
+      }
+
+      let path_param_value_initializer = match min {
+        0 => quote! { Vec::new() },
+        _ => quote! { ([const { String::new() }; #min], Vec::new()) },
+      };
+      
+      let path_param_value_assignment = match min {
+        0 => quote! { #path_param_value_ident.push(value.into()); },
+        _ => quote! { #path_param_value_ident.1.push(value.into()); },
+      };
+
+      let optional_segments_loop_definition = match max {
+        Some(max) => quote! { for _ in 0..#max },
+        None => quote! { loop },
+      };
+
+      quote! {
+        let mut #path_param_value_ident: #path_param_value_type = #path_param_value_initializer;
+
+        let mut path = path;
+        let mut matched = true;
+        
+        #required_segments_loop
+        
+        if matched {
+          // Extract values from the optional segments
+          #optional_segments_loop_definition {
+            let Some(rest) = path.strip_prefix('/') else {
+              // No more segments
+              break;
+            };
+            
+            let (value, rest) = Self::split_segment_end(rest);
+            #path_param_value_assignment
+            path = rest;
+          }
+          
+          #subtrie
+        }
+      }
     }
   };
 
@@ -195,7 +272,7 @@ fn render_trie(trie: &Trie) -> TokenStream {
       let children = render_trie(children);
 
       quote! {
-        if let Some(path) = Self::strip_prefix(path, #prefix) {
+        if let Some(path) = path.strip_prefix(#prefix) {
           #children
         }
       }
@@ -216,34 +293,33 @@ fn gen_segment_responder(
   let path_params: Vec<TokenStream> = extract_idents_for_segment(segment, routes);
 
   quote! {
-    // let mut response = hyper::Response::builder();
-    //
-    // response = response.status(200);
-    // response = response.header("Content-Type", "text/html");
-    //
-    // let mut body = internal::ResponseBody::new();
-    //
-    // body.push(internal::Bytes::from("<!DOCTYPE html>"));
-    // body.push(internal::Bytes::from("<html>"));
-    // body.push(internal::Bytes::from("<head>"));
-    // body.push(internal::Bytes::from("<meta charset=\"utf-8\" />"));
-    // body.push(internal::Bytes::from("</head>"));
-    // body.push(internal::Bytes::from("<body>"));
-    // body.push(internal::Bytes::from("<div>Matched handler:</div>"));
-    // body.push(internal::Bytes::from("<div style=\"color: red;\">"));
-    // body.push(internal::Bytes::from(#identifier));
-    // body.push(internal::Bytes::from("</div>"));
-    // body.push(internal::Bytes::from("<div style=\"margin-top: 16px;\">Path params:</div>"));
-    // body.push(internal::Bytes::from("<div style=\"color: darkgreen;\">"));
-    // #(#path_params)*
-    // body.push(internal::Bytes::from("</div>"));
-    // body.push(internal::Bytes::from("</body>"));
-    // body.push(internal::Bytes::from("</html>"));
-    //
-    // return internal::HandlerResult {
-    //   response: response.body(body)
-    // };
-    return "Handler for" + #identifier;
+    let mut response = hyper::Response::builder();
+    
+    response = response.status(200);
+    response = response.header("Content-Type", "text/html");
+    
+    let mut body = internal::ResponseBody::new();
+    
+    body.push(internal::Bytes::from("<!DOCTYPE html>"));
+    body.push(internal::Bytes::from("<html>"));
+    body.push(internal::Bytes::from("<head>"));
+    body.push(internal::Bytes::from("<meta charset=\"utf-8\" />"));
+    body.push(internal::Bytes::from("</head>"));
+    body.push(internal::Bytes::from("<body>"));
+    body.push(internal::Bytes::from("<div>Matched handler:</div>"));
+    body.push(internal::Bytes::from("<div style=\"color: red;\">"));
+    body.push(internal::Bytes::from(#identifier));
+    body.push(internal::Bytes::from("</div>"));
+    body.push(internal::Bytes::from("<div style=\"margin-top: 16px;\">Path params:</div>"));
+    body.push(internal::Bytes::from("<div style=\"color: darkgreen;\">"));
+    #(#path_params)*
+    body.push(internal::Bytes::from("</div>"));
+    body.push(internal::Bytes::from("</body>"));
+    body.push(internal::Bytes::from("</html>"));
+    
+    return internal::HandlerResult {
+      response: response.body(body)
+    };
   }
 }
 
@@ -364,7 +440,7 @@ fn gen_url_matcher_sequence_condition(
             quote! {
               if !url.is_empty() {
                 let end = url.find('/').unwrap_or(url.len());
-                let #url_param_value_ident: #url_param_value_type = Self::decode_dyn_segment_value(&url[..end]);
+                let #url_param_value_ident: #url_param_value_type = &url[..end];
                 let url = &url[end..];
                 #inner
               }
@@ -379,7 +455,7 @@ fn gen_url_matcher_sequence_condition(
             quote! {
               let segment = &url[0..url.find('/').unwrap_or(url.len())];
               if let Some(val) = segment.strip_suffix(#suffix) {
-                let #url_param_value_ident: #url_param_value_type = Self::decode_dyn_segment_value(val);
+                let #url_param_value_ident: #url_param_value_type = val;
                 let url = &url[val.len()..];
                 #inner
               }
@@ -406,7 +482,7 @@ fn gen_url_matcher_sequence_condition(
               }
 
               let segment = &rest[0..rest.find('/').unwrap_or(rest.len())];
-              #url_param_value_ident[segment_idx] = Self::decode_dyn_segment_value(segment);
+              #url_param_value_ident[segment_idx] = segment;
 
               rest = &rest[segment.len()..];
             }
@@ -433,7 +509,7 @@ fn gen_url_matcher_sequence_condition(
                 }
 
                 let segment = &rest[0..rest.find('/').unwrap_or(rest.len())];
-                #url_param_value_ident.0[segment_idx] = Self::decode_dyn_segment_value(segment);
+                #url_param_value_ident.0[segment_idx] = segment;
 
                 rest = &rest[segment.len()..];
                 rest = rest.strip_prefix('/').unwrap_or(rest);
@@ -442,8 +518,8 @@ fn gen_url_matcher_sequence_condition(
           };
 
           let unknown_segment_url_param_value_assignmnent = match min {
-            0 => quote! { #url_param_value_ident.push(Self::decode_dyn_segment_value(segment)); },
-            _ => quote! { #url_param_value_ident.1.push(Self::decode_dyn_segment_value(segment)); },
+            0 => quote! { #url_param_value_ident.push(segment); },
+            _ => quote! { #url_param_value_ident.1.push(segment); },
           };
 
           let unknown_segments_loop = quote! {

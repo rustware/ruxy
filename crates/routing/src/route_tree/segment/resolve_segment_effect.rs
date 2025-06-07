@@ -1,7 +1,10 @@
+use ::ruxy_util::dollar_encoding;
+
 use crate::{DynamicSequenceArity, SegmentEffect, UrlMatcherSequence};
 
 const SLOT_START: char = '@';
-const ESCAPE_SEQUENCE_START: char = '%';
+const CUSTOM_MATCH_START: char = '~';
+const ESCAPE_SEQUENCE_START: char = '$';
 const DYNAMIC_SEQUENCE_START: char = '{';
 const DYNAMIC_SEQUENCE_END: char = '}';
 const ARITY_SPECIFIER_START: char = '[';
@@ -9,6 +12,23 @@ const ARITY_SPECIFIER_END: char = ']';
 const ROUTE_GROUP_START: char = '(';
 const ROUTE_GROUP_END: char = ')';
 const EMPTY_SEGMENT: char = '_';
+
+// `[` and `]` are used by Ruxy but not reserved as a special character right now
+// because they can only appear inside `{` and `}` which are reserved delimiters.
+
+// `@` is currently only reserved on the beginning of a directory name, otherwise
+// ignored and matched literally.
+
+// Possible special characters for future use that are valid in directory names:
+// ! # & + , - . = ^ ` ~ [ ] @
+
+// `#` would be great fit for Fragment segments
+
+// `%` is not a Ruxy special characters but we don't want to ever reserve it as
+// it would make matching URL-encoded characters more difficult for users.
+// Currently they can write `a%2Fb` into directory name and directly match an URL
+// that has the same encoded character in it (this decodes to `a/b` but that's not
+// Ruxy's concern).
 
 #[derive(PartialEq)]
 enum SpecialChar {
@@ -53,19 +73,27 @@ impl SpecialChar {
 ///                 This is a shorthand for `{name[0]}`
 ///
 /// `@name`         Named slot
+/// 
+/// `~name`         Custom Match segment.
 ///
 /// Rules:
 /// 1. Only one dynamic sequence per segment.
 /// 2. Dynamic sequence other than arity:1 cannot have prefix or suffix.
 /// 3. Dynamic sequence name can contain only a-z, A-Z, 0-9, and _.
-/// 4. Special characters in segment dirnames (%@(){}[]) must be percent-encoded if wanted to be matched literally.
+/// 4. Special characters in segment dirnames must be dollar-encoded if wanted to be matched literally.
 ///
 /// Forbidden characters: https://stackoverflow.com/a/31976060
 pub fn resolve_segment_effect(dir_name: &str) -> Result<SegmentEffect, String> {
   // Named Slots for Parallel Routes (`@my_slot`)
   if let Some(slot_name) = dir_name.strip_prefix(SLOT_START) {
-    let decoded = decode_percent_encodings(slot_name, 1, false)?;
-    return Ok(SegmentEffect::Slot { name: decoded });
+    validate_slot_name(slot_name)?;
+    return Ok(SegmentEffect::Slot { name: slot_name.into() });
+  }
+
+  // Custom Match segments (~my_dir)
+  if let Some(identifier) = dir_name.strip_prefix(CUSTOM_MATCH_START) {
+    validate_custom_match_identifier(identifier)?;
+    return Ok(SegmentEffect::CustomMatch { identifier: identifier.into() });
   }
 
   // Route Groups – shorthand form (`(group)`)
@@ -295,7 +323,7 @@ fn resolve_url_matcher_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequenc
   let mut sequences = Vec::with_capacity(3);
 
   if !prefix.is_empty() {
-    let decoded = decode_percent_encodings(&prefix, 0, true)?;
+    let decoded = decode_dollar_encodings(&prefix, 0)?;
     sequences.push(UrlMatcherSequence::Literal(decoded));
   }
 
@@ -306,7 +334,7 @@ fn resolve_url_matcher_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequenc
   }
 
   if !suffix.is_empty() {
-    let decoded = decode_percent_encodings(&suffix, dir_name.len() - suffix.len(), true)?;
+    let decoded = decode_dollar_encodings(&suffix, dir_name.len() - suffix.len())?;
     sequences.push(UrlMatcherSequence::Literal(decoded));
   }
 
@@ -338,45 +366,39 @@ fn parse_arity(lo: String, hi: Option<String>) -> Result<DynamicSequenceArity, S
 }
 
 /// Validates escape sequence and returns intact. Decoding is done in different phase.
-/// This merely checks that the escape character `%` is followed by two valid hex digits.
+/// This merely checks that the escape character `$` is followed by two valid hex digits.
 fn validate_escape_sequence(ch1: Option<char>, ch2: Option<char>) -> Result<String, String> {
   let (Some(ch1), Some(ch2)) = (ch1, ch2) else {
     return Err(String::from(
-      "Incomplete percent-encoding.\r\n\
-      If you want to use a literal percent character, encode it as \"%25\".",
+      "Incomplete dollar-encoding.\r\n\
+      If you want to use a literal dollar character, encode it as \"$24\".",
     ));
   };
 
   if !ch1.is_ascii_hexdigit() || !ch2.is_ascii_hexdigit() {
     return Err(format!(
-      "Invalid percent-encoding \"%{ch1}{ch2}\".\r\n\
-      If you want to use a literal percent character, encode it as \"%25\".",
+      "Invalid dollar-encoding \"${ch1}{ch2}\".\r\n\
+      If you want to use a literal dollar character, encode it as \"$24\".",
     ));
   }
 
-  Ok(format!("%{ch1}{ch2}"))
+  Ok(format!("${ch1}{ch2}"))
 }
 
-/// Set `keep_slashes` to `true` to keep all slashes URL-encoded, while the rest of the input decoded.
-fn decode_percent_encodings(input: &str, offset_from_start: usize, keep_slashes: bool) -> Result<String, String> {
-  let decoded = urlencoding::decode(input).map_err(|err| {
+fn decode_dollar_encodings(input: &str, offset_from_start: usize) -> Result<String, String> {
+  let decoded = dollar_encoding::decode(input).map_err(|err| {
     format!(
-      "Invalid percent-encoding in directory name at position {}.\r\n\
-      If you want to use a literal percent character, encode it as \"%25\".",
+      "Invalid dollar-encoding in directory name at position {}.\r\n\
+      If you want to use a literal dollar character, encode it as \"$24\".",
       err.utf8_error().valid_up_to() + offset_from_start + 1
     )
   })?;
 
-  if keep_slashes {
-    // Encode the slashes again
-    return Ok(decoded.to_string().replace('/', "%2F"));
-  }
-  
   Ok(decoded.into())
 }
 
 fn unexpected_special_char_err(ch: char) -> String {
-  format!("Unexpected special character \"{ch}\". You might want to percent-encode it as \"%{:02X}\".", ch as u8)
+  format!("Unexpected special character \"{ch}\". You might want to dollar-encode it as \"${:02X}\".", ch as u8)
 }
 
 fn unexpected_char_after_arity_close_err(ch: char) -> String {
@@ -394,4 +416,42 @@ fn dirname_end_after_arity_close_err() -> String {
 
 fn arity_unsupported_number_err(num: String) -> String {
   format!("Dynamic sequence contains segment arity with unsupported number: \"{num}\".",)
+}
+
+fn validate_slot_name(slot_name: &str) -> Result<(), String> {
+  if slot_name.is_empty() {
+    return Err(String::from(
+      "Slots must have a name.\r\n\
+        If you want to match the `@` character literally, dollar-escape it as `$40`.\r\n\
+        Also please note that you might want to match the URL-encoded version `%40` instead.",
+    ));
+  }
+
+  if !slot_name.chars().all(|ch| matches!(ch, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_')) {
+    return Err(String::from(
+      "Slot names can only contain a-z, A-Z, 0-9 and _.\r\n\
+        If you want to match the leading `@` character literally, dollar-escape it as `$40`.\r\n\
+        Also please note that you might want to match the URL-encoded version `%40` instead."
+    ));
+  }
+  
+  Ok(())
+}
+
+fn validate_custom_match_identifier(segment_name: &str) -> Result<(), String> {
+  if segment_name.is_empty() {
+    return Err(String::from(
+      "Custom Match segments must have a name.\r\n\
+        If you want to match the `~` character literally, dollar-escape it as `$7E`.",
+    ));
+  }
+
+  if !segment_name.chars().all(|ch| matches!(ch, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_')) {
+    return Err(String::from(
+      "Custom Match segment names can only contain a-z, A-Z, 0-9 and _.\r\n\
+        If you want to match the leading `~` character literally, dollar-escape it as `$40`."
+    ));
+  }
+  
+  Ok(())
 }

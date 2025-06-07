@@ -105,13 +105,16 @@ pub enum SegmentEffect {
   Group,
   /// This can "branch" the matching into multiple different streams, rendered into multiple
   /// different slots in this segment's page. The user code will contain a `<Slot name="x" />`.
+  ///
   /// Slots have their own separate URLs trees (enabling true parallel routing) which gets
   /// encoded into URL as query parameters `@<slot name>=<encoded url>`. This means when the
   /// user refreshes the page, all the slots will get rendered exactly what they've seen before.
   /// This also enables sharing URLs to the exact current state of the whole page.
+  ///
   /// Segment with a Slot effect does NOT consume any URL segment and ALWAYS matches.
+  ///
   /// Segments nested inside a Slot can consume URL segments as per their own effects, but they
-  /// consume their URL contained in their own query parameter and NOT the main URL.
+  /// consume their URL contained in their own query parameter and NOT the primary URL.
   Slot {
     /// The name of this slot. To be used in `<Slot name="..." />`
     name: String,
@@ -124,6 +127,13 @@ pub enum SegmentEffect {
     /// Sequences represent the segment sequences like `prefix-` (literal) and `{var}` (dynamic),
     /// respecting their order of appearance in the directory name.
     sequences: Vec<UrlMatcherSequence>,
+  },
+  /// A Custom Match segment is a segment prefixed with `~` in its directory name, containing
+  /// a file named `match.rs` from which the user will export their own custom matching function.
+  CustomMatch {
+    /// The identifier of this Custom Match segment. Will be present in the custom path params
+    /// struct passed into subsequent layouts and Route Handlers.
+    identifier: String,
   },
   /// Matches empty URL segment (the segment between `foo` and `bar` in `/foo//bar`).
   /// Directory name to match this segment is `_`.
@@ -167,22 +177,6 @@ impl Default for DynamicSequenceArity {
 }
 
 impl SegmentEffect {
-  /// Optional segments are those with lower arity bound set to 0.
-  pub fn is_optional(&self) -> bool {
-    match self {
-      SegmentEffect::Group => false,
-      SegmentEffect::Slot { .. } => false,
-      SegmentEffect::UrlMatcher { .. } => {
-        let Some(DynamicSequenceArity::Range(lower, ..)) = self.get_dynamic_sequence_arity() else {
-          return true;
-        };
-        
-        *lower > 0
-      },
-      SegmentEffect::EmptySegment => true,
-    }
-  }
-
   pub fn get_dynamic_sequence_arity(&self) -> Option<&DynamicSequenceArity> {
     match self {
       SegmentEffect::UrlMatcher { sequences } => {

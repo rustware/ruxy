@@ -79,6 +79,13 @@ pub fn build_segments(
     }
 
     if path.is_dir() {
+      if let Some(dir_name) = path.file_name().unwrap().to_str() {
+        if dir_name.starts_with('_') && dir_name.len() > 1 {
+          // User's private code directory
+          continue;
+        }
+      }
+      
       let (segments, id) = build_segments(routes_dir, &path, depth + 1, Some(identifier.into()));
 
       if !segments.is_empty() && !id.is_empty() {
