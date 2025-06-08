@@ -3,7 +3,7 @@ use quote::quote;
 
 use crate::app::config::AppConfig;
 use ::ruxy_routing::{
-  DynamicSequenceArity, RequestHandler, RouteSegment, RouteTree, SegmentEffect, UrlMatcherSequence,
+  Arity, RequestHandler, RouteSegment, RouteTree, SegmentEffect, UrlMatcherSequence,
 };
 use ruxy_routing::TrailingSlashConfig;
 use ruxy_util::radix_trie::{RadixTrie, RadixTrieNode};
@@ -114,7 +114,7 @@ fn create_dynamic_segment_trie(config: &AppConfig, routes: &RouteTree, segment: 
   let mut segment_suffix: String = String::new();
 
   let mut var_name: &String = &String::new();
-  let mut arity: &DynamicSequenceArity = &Default::default();
+  let mut arity: &Arity = &Default::default();
 
   for (seq_index, sequence) in sequences.iter().enumerate() {
     match sequence {
@@ -125,7 +125,7 @@ fn create_dynamic_segment_trie(config: &AppConfig, routes: &RouteTree, segment: 
           segment_suffix.push_str(literal);
         }
       }
-      UrlMatcherSequence::Dynamic { var_name: v, arity: a } => {
+      UrlMatcherSequence::Dynamic { param_name: v, seg_count: a } => {
         var_name = v;
         arity = a;
       }
@@ -142,7 +142,7 @@ fn create_dynamic_segment_trie(config: &AppConfig, routes: &RouteTree, segment: 
   let mut prefix = String::new();
 
   let target = match arity {
-    DynamicSequenceArity::Exact(1) => {
+    Arity::Exact(1) => {
       prefix.push('/');
       prefix.push_str(&segment_prefix);
 
@@ -161,7 +161,7 @@ fn create_dynamic_segment_trie(config: &AppConfig, routes: &RouteTree, segment: 
         }
       }
     }
-    DynamicSequenceArity::Exact(count) => {
+    Arity::Exact(count) => {
       // "Exact(0)" arities are converted to Groups
       // "Exact(1)" is handled above
       assert!(*count > 1);
@@ -194,7 +194,7 @@ fn create_dynamic_segment_trie(config: &AppConfig, routes: &RouteTree, segment: 
         if matched { #subtrie }
       }
     }
-    DynamicSequenceArity::Range(min, max) => {
+    Arity::Range(min, max) => {
       let mut required_segments_loop = TokenStream::new();
       
       if *min > 0 {
@@ -328,7 +328,7 @@ fn extract_idents_for_segment(segment: &RouteSegment, routes: &RouteTree) -> Vec
 
   if let SegmentEffect::UrlMatcher { sequences } = &segment.effect {
     let dyn_var_name = sequences.iter().find_map(|s| {
-      let UrlMatcherSequence::Dynamic { var_name, .. } = s else {
+      let UrlMatcherSequence::Dynamic { param_name: var_name, .. } = s else {
         return None;
       };
       Some(var_name)
@@ -427,7 +427,7 @@ fn gen_url_matcher_sequence_condition(
     UrlMatcherSequence::Literal(literal) => {
       quote! { if let Some(url) = Self::strip_prefix(url, #literal) { #inner } }
     }
-    UrlMatcherSequence::Dynamic { arity, .. } => {
+    UrlMatcherSequence::Dynamic { seg_count: arity, .. } => {
       let url_param_value_ident = format!("url_param_{}", segment.hex);
       let url_param_value_ident = Ident::new(&url_param_value_ident, Span::mixed_site());
 
@@ -435,7 +435,7 @@ fn gen_url_matcher_sequence_condition(
 
       match *arity {
         // this is the only case where we deal with prefix/suffix
-        DynamicSequenceArity::Exact(1) => {
+        Arity::Exact(1) => {
           if is_last {
             quote! {
               if !url.is_empty() {
@@ -462,7 +462,7 @@ fn gen_url_matcher_sequence_condition(
             }
           }
         }
-        DynamicSequenceArity::Exact(num) => {
+        Arity::Exact(num) => {
           assert!(num > 1);
 
           quote! {
@@ -493,7 +493,7 @@ fn gen_url_matcher_sequence_condition(
             }
           }
         }
-        DynamicSequenceArity::Range(min, max) => {
+        Arity::Range(min, max) => {
           let url_param_value_initializer = match min {
             0 => quote! { Vec::new() },
             _ => quote! { ([const { String::new() }; #min], Vec::new()) },

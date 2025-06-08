@@ -1,8 +1,7 @@
 mod build_segments;
-mod resolve_segment_effect;
+mod parse_segment;
 
 use std::collections::HashMap;
-use std::path;
 use quote::quote;
 pub use build_segments::*;
 
@@ -100,7 +99,7 @@ pub type SegmentMap = HashMap<SegmentIdentifier, RouteSegment>;
 /// A Segment Effect determines how this Route Segment affects routing.
 #[derive(Debug)]
 pub enum SegmentEffect {
-  /// This can be a Route Group (either aliased – `(x)`, or fully expressed – `{var[0]}`).
+  /// This is a Route Group (either aliased – `(x)`, or fully expressed – `{var[0]}`).
   /// Segment with a Group effect does NOT consume any URL segment and ALWAYS matches.
   Group,
   /// This can "branch" the matching into multiple different streams, rendered into multiple
@@ -141,28 +140,33 @@ pub enum SegmentEffect {
 }
 
 #[derive(Debug)]
-pub enum UrlMatcherSequence {
-  Literal(String),
-  Dynamic { var_name: String, arity: DynamicSequenceArity },
+pub struct UrlMatcherSequence {
+  /// The index of the start position of this sequence in the directory name
+  pub start_pos: usize,
+  pub typed: TypedSequence,
 }
 
-/// Arity determines the number of URL segments to be matched by a dynamic sequence
 #[derive(Debug)]
-pub enum DynamicSequenceArity {
-  /// Exact number of URL segments to be matched by this dynamic sequence
-  Exact(usize),
-  /// Range is inclusive on both sides
-  Range(usize, Option<usize>),
+pub enum TypedSequence {
+  Literal(String),
+  Dynamic(DynamicSequence),
 }
 
-impl DynamicSequenceArity {
+#[derive(Debug)]
+pub struct DynamicSequence {
+  pub param_name: String,
+  pub seg_count: Arity,
+  pub char_len: Arity,
+}
+
+impl DynamicSequence {
   pub fn get_rust_type(&self) -> proc_macro2::TokenStream {
-    match self {
-      Self::Exact(num) => match num {
+    match self.seg_count {
+      Arity::Exact(num) => match num {
         1 => quote! { String },
         other => quote! { [String; #other] },
       },
-      Self::Range(lower, ..) => match lower {
+      Arity::Range(lower, ..) => match lower {
         0 => quote! { Vec<String> },
         lower => quote! { ([String; #lower], Vec<String>) },
       },
@@ -170,27 +174,26 @@ impl DynamicSequenceArity {
   }
 }
 
-impl Default for DynamicSequenceArity {
+impl Default for DynamicSequence {
   fn default() -> Self {
-    DynamicSequenceArity::Exact(1)
+    Self {
+      param_name: "".to_string(),
+      seg_count: Arity::Exact(1),
+      char_len: Arity::Range(1, None),
+    }
   }
 }
 
-impl SegmentEffect {
-  pub fn get_dynamic_sequence_arity(&self) -> Option<&DynamicSequenceArity> {
-    match self {
-      SegmentEffect::UrlMatcher { sequences } => {
-        sequences.iter().find_map(|seq| {
-          if let UrlMatcherSequence::Dynamic { arity, .. } = seq {
-            Some(arity)
-          } else {
-            None
-          }
-        })
-      },
-      _ => None,
-    }
-  }
+/// A configuration determining the number of items to match by a dynamic sequence.
+/// An "item" can be either an URL Segment, or a character.
+/// 
+/// This is used for specifying the Segment Count and Character Length of a dynamic sequence.
+#[derive(Debug)]
+pub enum Arity {
+  /// Exact count of items to match.
+  Exact(usize),
+  /// Range is inclusive on both sides.
+  Range(usize, Option<usize>),
 }
 
 impl UrlMatcherSequence {
@@ -198,7 +201,7 @@ impl UrlMatcherSequence {
   /// Otherwise returns None.
   pub fn get_literal(&self) -> Option<&String> {
     match self {
-      UrlMatcherSequence::Literal(literal) => Some(literal),
+      UrlMatcherSequence { typed: TypedSequence::Literal(literal), .. } => Some(literal),
       _ => None
     }
   }

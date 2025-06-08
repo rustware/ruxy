@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::{MAIN_SEPARATOR_STR, Path, PathBuf};
 
-use crate::route_tree::segment::resolve_segment_effect::resolve_segment_effect;
+use crate::route_tree::segment::parse_segment::parse_segment;
 
 use super::{RequestHandler, RouteSegment, RouteSegmentFileModule, SegmentEffect, SegmentIdentifier, SegmentMap};
 
@@ -164,7 +164,7 @@ pub fn build_segments(
 
   let effect = match is_root {
     true => SegmentEffect::Group,
-    false => resolve_segment_effect(dir_name).unwrap_or_else(|e| {
+    false => parse_segment(dir_name).unwrap_or_else(|e| {
       compile_errors.push(e);
 
       // We prevent compiling when there's an error in the route tree,

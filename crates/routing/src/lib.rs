@@ -32,15 +32,15 @@ pub enum TrailingSlashConfig {
   /// └── nested/
   ///     ├─── _/
   ///     │   └── page.rs
-  ///     └─── {param}/
+  ///     └─── {param(0..)}/
   ///         └── page.rs
   /// ```
   /// In this case, neither of the leaf routes will match the request with URL `/nested/`,
-  /// because the trailing slash is ignored. `{param}` segment would still however match `/nested/foo`.
+  /// because the trailing slash is ignored. `{param(0..)}` segment would however still match `/nested/foo`.
   ///
   /// For this reason, it is recommended that your leaf Dynamic Segments are either defined
-  /// with a prefix and/or a suffix, or that you use the `{param!}` notation that can only
-  /// match URL segments with a non-empty value.
+  /// with a prefix and/or a suffix, or that you remove the character length specifier allowing
+  /// segment with an empty value to be matched – e.g. change it to `(1..)`, which is a default.
   /// 
   /// For the same reason, it is also recommended to avoid leaf Empty Segment matchers `_`,
   /// as they cannot be matched at all when this option is active.
@@ -64,15 +64,15 @@ pub enum TrailingSlashConfig {
   /// └── nested/
   ///     ├─── _/
   ///     │   └── page.rs
-  ///     └─── {param}/
+  ///     └─── {param(0..)}/
   ///         └── page.rs
   /// ```
   /// In this case, neither of the leaf routes will match the request with URL `/nested/`,
-  /// because it is redirected. `{param}` segment would still however match `/nested/foo`.
+  /// because it is redirected. `{param(0..)}` segment would however still match `/nested/foo`.
   /// 
   /// For this reason, it is recommended that your leaf Dynamic Segments are either defined
-  /// with a prefix and/or a suffix, or that you use the `{param!}` notation that can only
-  /// match URL segments with a non-empty value.
+  /// with a prefix and/or a suffix, or that you remove the character length specifier allowing
+  /// segment with an empty value to be matched – e.g. change it to `(1..)`, which is a default.
   /// 
   /// For the same reason, it is also recommended to avoid leaf Empty Segment matchers `_`,
   /// as they cannot be matched at all when this option is active.
