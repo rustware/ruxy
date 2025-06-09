@@ -6,10 +6,18 @@ pub struct AppConfig {
   pub trailing_slash: TrailingSlashConfig,
 }
 
-pub fn parse_app_config(_macro_input: TokenStream) -> AppConfig {
-  // TODO: Parse config from macro input AND ruxy.toml
-  
-  AppConfig {
-    trailing_slash: TrailingSlashConfig::Ignore,
+impl Default for AppConfig {
+  fn default() -> Self {
+    Self {
+      trailing_slash: TrailingSlashConfig::RedirectToRemoved,
+    }
   }
+}
+
+pub fn parse_app_config(_macro_input: TokenStream) -> AppConfig {
+  let config: AppConfig = Default::default();
+
+  // TODO: Parse config from macro input AND ruxy.toml and update `config`
+
+  config
 }

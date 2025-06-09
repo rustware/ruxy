@@ -152,7 +152,7 @@ pub enum TypedSequence {
   Dynamic(DynamicSequence),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct DynamicSequence {
   pub param_name: String,
   pub seg_count: Arity,
@@ -186,14 +186,30 @@ impl Default for DynamicSequence {
 
 /// A configuration determining the number of items to match by a dynamic sequence.
 /// An "item" can be either an URL Segment, or a character.
-/// 
+///
 /// This is used for specifying the Segment Count and Character Length of a dynamic sequence.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum Arity {
   /// Exact count of items to match.
   Exact(usize),
   /// Range is inclusive on both sides.
   Range(usize, Option<usize>),
+}
+
+impl Arity {
+  pub fn get_min(&self) -> usize {
+    match self {
+      Self::Exact(exact) => *exact,
+      Self::Range(min, _) => *min,
+    }
+  }
+  
+  pub fn get_max(&self) -> Option<usize> {
+    match self {
+      Self::Exact(exact) => Some(*exact),
+      Self::Range(_, max) => *max,
+    }
+  }
 }
 
 impl UrlMatcherSequence {

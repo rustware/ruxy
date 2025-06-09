@@ -100,6 +100,18 @@ pub trait Server: Send + 'static {
   fn strip_prefix_slash(path: &str) -> &str {
     path.strip_prefix('/').unwrap_or(path)
   }
+  
+  /// Produces a response that redirects the user to the provided `path`.
+  #[inline]
+  fn redirect_to_path(request: &HyperRequest, path: &str) -> HandlerResult {
+    todo!()
+  }
+  
+  /// Produces a response that redirects the user to the provided `path` with added trailing slash.
+  #[inline]
+  fn redirect_to_added_slash(request: &HyperRequest, path: &str) -> HandlerResult {
+    todo!()
+  }
 }
 
 pub struct HandlerResult {

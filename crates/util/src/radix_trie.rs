@@ -65,7 +65,7 @@ where
   pub fn to_nodes(&self) -> &[RadixTrieNode<Item>] {
     &self.nodes
   }
-  
+
   /// Extracts all key-value pairs from the trie as a flat vector of references.
   pub fn to_flat(&self) -> Vec<(String, &Item)> {
     let mut pairs = Vec::new();
@@ -124,7 +124,7 @@ where
       self.insert(&full_key, item);
     }
   }
-  
+
   /// Creates a new RadixTrie with all entries prefixed with a given prefix,
   /// consuming the current RadixTrie on which this method was called.
   pub fn with_prefix(self, prefix: &str) -> Self {
