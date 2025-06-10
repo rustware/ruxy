@@ -4,12 +4,12 @@ use quote::quote;
 use ::ruxy_routing::{Arity, RouteSegment, SegmentEffect, UrlMatcherSequence, TypedSequence};
 use ::ruxy_util::radix_trie::RadixTrie;
 
-use crate::app::handler::router::context::RouterContext;
+use crate::app::handler::router::context::GenContext;
 use crate::app::handler::router::render::render_trie;
 
 type Trie = RadixTrie<TokenStream>;
 
-pub fn with_url_matcher(_ctx: &RouterContext, segment: &RouteSegment, subtrie: Trie) -> Trie {
+pub fn with_url_matcher(_ctx: &GenContext, segment: &RouteSegment, subtrie: Trie) -> Trie {
   let SegmentEffect::UrlMatcher { sequences } = &segment.effect else {
     unreachable!("This function only ever receives UrlMatcher-effect segments");
   };

@@ -4,8 +4,8 @@ pub fn main() {
   let serialized = emit_watch_hints_for_dir(Path::new("src/routes"));
   let hashed = short_hash(&serialized);
   
-  // Updates `.ruxy/BUILD_SCRIPT_RUN_TAG` with a build tag
-  update_build_script_run_tag(format!("{:x}", hashed));
+  // Updates `.ruxy/ROUTES_HASH` with a build tag
+  update_routes_hash_file(format!("{:x}", hashed));
 }
 
 fn emit_watch_hints_for_dir(path: &Path) -> String {
@@ -40,7 +40,7 @@ fn emit_watch_hints_for_dir(path: &Path) -> String {
   format!("{dirname}({})", file_names.join("|"))
 }
 
-fn update_build_script_run_tag(hash: String) {
+fn update_routes_hash_file(hash: String) {
   let Some(manifest_dir) = std::env::var_os("CARGO_MANIFEST_DIR") else {
     panic!("CARGO_MANIFEST_DIR is not set. Are you running this from cargo?");
   };
@@ -50,12 +50,12 @@ fn update_build_script_run_tag(hash: String) {
 
   std::fs::create_dir(&ruxy_cache_dir).unwrap_or_else(|err| {
     if err.kind() != std::io::ErrorKind::AlreadyExists {
-      panic!("Could not create .ruxy directory: {}", err);
+      panic!("Could not create the `.ruxy` directory: {}", err);
     }
   });
 
-  let build_script_run_tag_path = manifest_dir.join(".ruxy/BUILD_SCRIPT_RUN_TAG");
-  std::fs::write(build_script_run_tag_path, hash).unwrap();
+  let routes_hash_file_path = manifest_dir.join(".ruxy/ROUTES_HASH");
+  std::fs::write(routes_hash_file_path, hash).unwrap();
 }
 
 use std::hash::{Hash, Hasher};

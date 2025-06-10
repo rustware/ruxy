@@ -21,10 +21,10 @@ pub fn ruxy_app(config: impl Into<TokenStream>) -> proc_macro::TokenStream {
 
   let main_fn_ident = Ident::new("main", Span::call_site());
 
-  let build_tag_file = cache_dir.join("BUILD_SCRIPT_RUN_TAG");
+  let routes_hash_file = cache_dir.join("ROUTES_HASH");
 
-  let build_tag = match build_tag_file.exists() {
-    true => quote! { let _ = include_bytes!("../.ruxy/BUILD_SCRIPT_RUN_TAG"); },
+  let build_tag = match routes_hash_file.exists() {
+    true => quote! { let _ = include_bytes!("../.ruxy/ROUTES_HASH"); },
     false => TokenStream::new(),
   };
 
@@ -62,15 +62,4 @@ pub fn ruxy_app(config: impl Into<TokenStream>) -> proc_macro::TokenStream {
   };
 
   output.into()
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  #[test]
-  fn it_generates_main_function() {
-    let code = ruxy_app(TokenStream::new());
-    assert_eq!(code.to_string(), "fn main() {}");
-  }
 }

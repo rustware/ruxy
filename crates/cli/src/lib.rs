@@ -6,6 +6,7 @@ use clap::{ArgAction, Parser};
 use commands::Commands;
 use commands::init::{cmd_init, CmdInitOptions};
 use commands::build::{cmd_build, CmdBuildOptions};
+use commands::update::{cmd_update, CmdUpdateOptions};
 
 const ABOUT: &str = "Welcome to Ruxy CLI! Use it to initialize, build, and run your project.";
 
@@ -34,6 +35,9 @@ pub fn cli() {
   match cli.command {
     Commands::Init { directory, name, enable_typescript } => {
       cmd_init(CmdInitOptions { directory, name, enable_typescript });
+    }
+    Commands::Update { directory } => {
+      cmd_update(CmdUpdateOptions { directory });
     }
     Commands::Build { directory } => {
       cmd_build(CmdBuildOptions { directory })

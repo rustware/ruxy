@@ -2,14 +2,15 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
 use ::ruxy_routing::{
-  DynamicSequence, RequestHandler, RouteSegment, RouteSequence, RouteSequenceMatcher, RouteTree, SegmentEffect,
+  DynamicSequence, MatchDirection, RequestHandler, RouteSegment, RouteSequence, RouteTree, SegmentEffect,
   TrailingSlashConfig, TypedSequence,
 };
 use ::ruxy_util::radix_trie::RadixTrie;
 
 use crate::app::config::AppConfig;
-use crate::app::handler::router::context::RouterContext;
-use crate::app::handler::router::wrappers;
+
+use super::context::GenContext;
+use super::wrappers;
 
 use super::render::render_trie;
 
@@ -17,15 +18,10 @@ type Trie = RadixTrie<TokenStream>;
 
 pub fn generate(config: &AppConfig, routes: &RouteTree) -> TokenStream {
   // Create RouterContext to pass it to the nested generators
-  let ctx = RouterContext { config, routes };
-
-  // Get the root sequence for the Radix Trie root
-  let Some(root_sequence) = &routes.root_sequence else {
-    return TokenStream::new();
-  };
+  let ctx = GenContext { config, routes };
 
   // Generate a Radix Trie recursively for all sequences from the root
-  let radix_trie = create_radix_trie(&ctx, root_sequence, false);
+  let radix_trie = create_radix_trie(&ctx, &routes.root_sequence);
 
   // Render the Radix Trie into a TokenStream
   let radix_trie = render_trie(&radix_trie, false);
@@ -39,24 +35,21 @@ pub fn generate(config: &AppConfig, routes: &RouteTree) -> TokenStream {
   }
 }
 
-fn create_radix_trie(ctx: &RouterContext, sequence: &RouteSequence, reversed: bool) -> Trie {
+fn create_radix_trie(ctx: &GenContext, sequence: &RouteSequence) -> Trie {
   // Create a new Radix Trie for each segment
   let mut trie = RadixTrie::new();
-  
+
   // Extend the trie with all the children tries
   for child in &sequence.children {
-    // If the sequence matches a range of URL segments, we'll match the rest from the end
-    let reversed = reversed || sequence.is_seg_count_range();
-
     // Create Radix Trie for the child sequence
-    let child_trie = create_radix_trie(ctx, child, reversed);
+    let child_trie = create_radix_trie(ctx, child);
 
     // Extend the current segment's trie with the child trie
     trie.extend(child_trie);
   }
 
   // Insert the segment's handler into the trie if it has one
-  if let Some(handler) = &segment.route_handler {
+  if let Some(handler) = get_route_handler_for_sequence(ctx, sequence) {
     let end_of_path_cond = match (segment.is_root, &ctx.config.trailing_slash) {
       (false, TrailingSlashConfig::Ignore) => quote! { path.is_empty() || path == "/" },
       // We're handling trailing slash for "RequirePresent" as part of the prefix.
@@ -89,7 +82,27 @@ fn create_radix_trie(ctx: &RouterContext, sequence: &RouteSequence, reversed: bo
   }
 }
 
-fn gen_segment_responder(ctx: &RouterContext, segment: &RouteSegment, handler: &RequestHandler) -> TokenStream {
+fn get_route_handler_for_sequence<'a>(ctx: &'a GenContext, sequence: &RouteSequence) -> Option<&'a RequestHandler> {
+  let segment = ctx.routes.segments.get(&sequence.containing_segment_id);
+
+  if sequence.direction == MatchDirection::Rtl {
+    // The right-to-left matching always ends with a SegCount Range sequence
+    if !sequence.children.is_empty() || !sequence.is_seg_count_range() {
+      return None;
+    }
+
+    return segment?.route_handler.as_ref();
+  }
+
+  // For left-to-right matching, we only match the segment's handler when the last sequence is matched
+  if !sequence.is_last_in_segment {
+    return None;
+  }
+
+  segment?.route_handler.as_ref()
+}
+
+fn gen_segment_responder(ctx: &GenContext, segment: &RouteSegment, handler: &RequestHandler) -> TokenStream {
   let identifier = &segment.identifier;
 
   let path_params: Vec<TokenStream> = extract_idents_for_segment(segment, ctx.routes);

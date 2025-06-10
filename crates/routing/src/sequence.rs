@@ -19,8 +19,9 @@ pub struct RouteSequence {
   /// The index of this sequence inside its route segment.
   pub containing_segment_id: String,
   pub matcher: RouteSequenceMatcher,
-  pub children: Vec<RouteSequence>,
   pub direction: MatchDirection,
+  pub is_last_in_segment: bool,
+  pub children: Vec<RouteSequence>,
 }
 
 impl RouteSequence {
@@ -34,6 +35,7 @@ impl PartialEq for RouteSequence {
     self.containing_segment_id == other.containing_segment_id
       && self.matcher == other.matcher
       && self.direction == other.direction
+      && self.is_last_in_segment == other.is_last_in_segment
   }
 }
 

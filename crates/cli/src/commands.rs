@@ -1,5 +1,6 @@
 pub mod build;
 pub mod init;
+pub mod update;
 
 use std::path::PathBuf;
 
@@ -20,6 +21,11 @@ pub enum Commands {
     name: Option<String>,
     #[arg(long, help = "Enable TypeScript support in your client code")]
     enable_typescript: Option<bool>,
+  },
+  #[command(about = "Parses your routes and updates the generated TS types and internal metadata")]
+  Update {
+    #[arg(short, long, alias = "dir", help = "A relative or absolute path to your project's directory")]
+    directory: Option<PathBuf>,
   },
   #[command(about = "Create a production build of your project")]
   Build {

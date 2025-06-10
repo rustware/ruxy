@@ -1,13 +1,10 @@
-mod sequence;
-mod segment;
-
 #[cfg(test)]
 mod test;
 
 use std::path::Path;
 
-pub use sequence::*;
-pub use segment::*;
+pub use crate::sequence::*;
+pub use crate::segment::*;
 
 /// A complete representation of user application route tree parsed from the file system.
 #[derive(Debug)]

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::{MAIN_SEPARATOR_STR, Path, PathBuf};
 
-use crate::route_tree::segment::parse_segment::parse_segment;
+use crate::segment::parse_segment::parse_segment;
 
 use super::{RequestHandler, RouteSegment, RouteSegmentFileModule, SegmentEffect, SegmentIdentifier, SegmentMap};
 

@@ -37,13 +37,14 @@ fn build_route_segments<'a>(segments: &'a SegmentMap, segment: &'a RouteSegment)
 
 fn extract_segment_sequences(segment: &RouteSegment) -> Vec<RouteSequence> {
   let base_sequence = RouteSequence {
+    is_last_in_segment: false,
     containing_segment_id: segment.identifier.clone(),
     matcher: RouteSequenceMatcher::None,
     direction: MatchDirection::Ltr,
     children: vec![],
   };
 
-  match &segment.effect {
+  let mut sequences = match &segment.effect {
     SegmentEffect::EmptySegment => {
       vec![RouteSequence { matcher: RouteSequenceMatcher::None, ..base_sequence }]
     }
@@ -73,11 +74,17 @@ fn extract_segment_sequences(segment: &RouteSegment) -> Vec<RouteSequence> {
           }
         }
       }
-
+      
       sequences
     }
     _ => vec![],
+  };
+
+  if let Some(last) = sequences.last_mut() {
+    last.is_last_in_segment = true;
   }
+
+  sequences  
 }
 
 /// When a SegCount Range sequence is encountered, we need to flip the path
@@ -114,6 +121,7 @@ fn flip_rtl_sequences(sequences: Vec<RouteSequence>) -> Vec<RouteSequence> {
 /// understood as a reverse effect of flattening.
 fn inflate_routes(routes: Vec<Vec<RouteSequence>>) -> RouteSequence {
   let mut root = RouteSequence {
+    is_last_in_segment: true,
     containing_segment_id: "".to_string(),
     matcher: RouteSequenceMatcher::None,
     direction: MatchDirection::Ltr,
@@ -136,10 +144,10 @@ fn inflate_routes_recursive(current: &mut RouteSequence, mut route: VecDeque<Rou
     // The sequence already exists in the tree, so we just pass the pointer to it for the next route sequence
     return inflate_routes_recursive(child, route);
   }
-  
+
   // The sequence does not exist, so we push it to the current node's children
   current.children.push(sequence);
-  
+
   // ...and pass a pointer to it for the next route sequence
   let inserted_ref = current.children.last_mut().unwrap();
   inflate_routes_recursive(inserted_ref, route);

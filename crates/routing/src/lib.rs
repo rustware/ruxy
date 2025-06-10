@@ -1,4 +1,6 @@
 mod route_tree;
+mod segment;
+mod sequence;
 
 pub use route_tree::*;
 
