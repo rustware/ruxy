@@ -15,7 +15,10 @@ pub fn wrap_router(config: &AppConfig, router: TokenStream) -> TokenStream {
     }
     TrailingSlashConfig::RedirectToRemoved => {
       quote! {
-        if let Some(path) = path.strip_suffix('/') {
+        // TODO: Maybe do just .strip_prefix('/') here to allow matching
+        //  leaf empty segments or leaf `{_(0..)}` segments?
+        //  Users could add one extra slash at the end then (leaf//).
+        if let Some(path) = path.trim_end_matches('/') {
           if !path.is_empty() {
             return Self::redirect_to_path(&request, path);
           }

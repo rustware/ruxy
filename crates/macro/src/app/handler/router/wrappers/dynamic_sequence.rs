@@ -1,7 +1,7 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
-use ::ruxy_routing::{Arity, RouteSegment, SegmentEffect, UrlMatcherSequence, TypedSequence};
+use ::ruxy_routing::{Arity, UrlMatcherSequence, TypedSequence, DynamicSequence, RouteSequence, RouteSequenceMatcher};
 use ::ruxy_util::radix_trie::RadixTrie;
 
 use crate::app::handler::router::context::GenContext;
@@ -9,55 +9,24 @@ use crate::app::handler::router::render::render_trie;
 
 type Trie = RadixTrie<TokenStream>;
 
-pub fn with_url_matcher(_ctx: &GenContext, segment: &RouteSegment, subtrie: Trie) -> Trie {
-  let SegmentEffect::UrlMatcher { sequences } = &segment.effect else {
-    unreachable!("This function only ever receives UrlMatcher-effect segments");
+pub fn with_dynamic_sequence(ctx: &GenContext, sequence: &RouteSequence, subtrie: Trie) -> Trie {
+  let segment = &ctx.routes.segments[&sequence.containing_segment_id];
+  
+  let RouteSequenceMatcher::Dynamic(dyn_seq) = &sequence.matcher else {
+    unreachable!("Unexpected sequence matcher");
   };
   
-  let mut segment_prefix: String = String::new();
-  let mut segment_suffix: String = String::new();
-
-  let mut var_name: &String = &String::new();
-  let mut arity: &Arity = &Default::default();
-
-  for (seq_index, sequence) in sequences.iter().enumerate() {
-    match &sequence.typed {
-      TypedSequence::Literal(literal) => {
-        if seq_index == 0 {
-          segment_prefix.push_str(literal);
-          
-          if sequences.len() == 1 {
-            
-          }
-          
-          continue;
-        }
-        
-        if seq_index == sequences.len() - 1 {
-          segment_suffix.push_str(literal);
-        }
-      }
-      UrlMatcherSequence::Dynamic { param_name: v, seg_count: a } => {
-        var_name = v;
-        arity = a;
-      }
-    }
-  }
-
-  let subtrie = render_trie(&subtrie);
+  let subtrie = render_trie(&subtrie, sequence.direction);
 
   let path_param_value_ident = format!("path_param_{}", segment.hex);
   let path_param_value_ident = Ident::new(&path_param_value_ident, Span::mixed_site());
-
-  let path_param_value_type = arity.get_rust_type();
+  
+  let path_param_value_type = dyn_seq.get_rust_type();
 
   let mut prefix = String::new();
-
-  let target = match arity {
+  
+  let target = match dyn_seq.seg_count {
     Arity::Exact(1) => {
-      prefix.push('/');
-      prefix.push_str(&segment_prefix);
-
       if segment_suffix.is_empty() {
         quote! {
           let (value, path) = Self::split_segment_end(path);

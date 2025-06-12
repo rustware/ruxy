@@ -87,3 +87,12 @@ pub enum TrailingSlashConfig {
   /// to the same URL but with the trailing slash added.
   RedirectToAdded,
 }
+
+impl TrailingSlashConfig {
+  pub fn get_routing_prefix(&self) -> &'static str {
+    match self {
+      Self::RequireAbsent | Self::RedirectToRemoved => "/",
+      _ => ""
+    }
+  }
+}
