@@ -1,9 +1,13 @@
-mod build_segments;
+mod build_segment_map;
+mod get_route_segments;
 mod parse_segment;
 
 use std::collections::HashMap;
+
 use quote::quote;
-pub use build_segments::*;
+
+pub use build_segment_map::*;
+pub use get_route_segments::*;
 
 /// Route Segment represents a single directory nested any number of levels deep inside the "routes" directory,
 /// provided that this directory contains either:
@@ -154,9 +158,20 @@ pub enum TypedSequence {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct DynamicSequence {
+  /// The name of the path parameter as defined by the user.
   pub param_name: String,
+  /// The number of URL segments to match.
   pub seg_count: Arity,
+  /// The number of characters to match.
   pub char_len: Arity,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum SplitMatchMergeType {
+  /// Prepend the separated value to the rest of the values.
+  Prepend,
+  /// Append the separated value to the rest of the values.
+  Append,
 }
 
 impl DynamicSequence {
@@ -176,11 +191,7 @@ impl DynamicSequence {
 
 impl Default for DynamicSequence {
   fn default() -> Self {
-    Self {
-      param_name: "".to_string(),
-      seg_count: Arity::Exact(1),
-      char_len: Arity::Range(1, None),
-    }
+    Self { param_name: "".to_string(), seg_count: Arity::Exact(1), char_len: Arity::Range(1, None) }
   }
 }
 
@@ -203,7 +214,7 @@ impl Arity {
       Self::Range(min, _) => *min,
     }
   }
-  
+
   pub fn get_max(&self) -> Option<usize> {
     match self {
       Self::Exact(exact) => Some(*exact),
@@ -218,7 +229,7 @@ impl UrlMatcherSequence {
   pub fn get_literal(&self) -> Option<&String> {
     match self {
       UrlMatcherSequence { typed: TypedSequence::Literal(literal), .. } => Some(literal),
-      _ => None
+      _ => None,
     }
   }
 }
@@ -234,7 +245,7 @@ impl RouteSegment {
         }
 
         sequences.first()?.get_literal()
-      },
+      }
       _ => None,
     }
   }

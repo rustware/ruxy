@@ -7,7 +7,7 @@ use super::{RequestHandler, RouteSegment, RouteSegmentFileModule, SegmentEffect,
 
 /// Please read the documentation for the `RouteSegment` struct to understand what a Route Segment is.
 /// Returns (<all nested children map>, <self identifier>)
-pub fn build_segments(
+pub fn build_segment_map(
   routes_dir: &Path,
   dir: &Path,
   depth: usize,
@@ -86,7 +86,7 @@ pub fn build_segments(
         }
       }
       
-      let (segments, id) = build_segments(routes_dir, &path, depth + 1, Some(identifier.into()));
+      let (segments, id) = build_segment_map(routes_dir, &path, depth + 1, Some(identifier.into()));
 
       if !segments.is_empty() && !id.is_empty() {
         child_segments.extend(segments);

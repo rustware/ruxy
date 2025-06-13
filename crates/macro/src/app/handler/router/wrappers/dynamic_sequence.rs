@@ -1,7 +1,7 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
-use ::ruxy_routing::{Arity, UrlMatcherSequence, TypedSequence, DynamicSequence, RouteSequence, RouteSequenceMatcher};
+use ::ruxy_routing::{Arity, MatchDirection, RouteSequence, RouteSequenceMatcher};
 use ::ruxy_util::radix_trie::RadixTrie;
 
 use crate::app::handler::router::context::GenContext;
@@ -11,46 +11,51 @@ type Trie = RadixTrie<TokenStream>;
 
 pub fn with_dynamic_sequence(ctx: &GenContext, sequence: &RouteSequence, subtrie: Trie) -> Trie {
   let segment = &ctx.routes.segments[&sequence.containing_segment_id];
-  
-  let RouteSequenceMatcher::Dynamic(dyn_seq) = &sequence.matcher else {
-    unreachable!("Unexpected sequence matcher");
-  };
-  
-  let subtrie = render_trie(&subtrie, sequence.direction);
+  let concludes_segment = sequence.concludes_segment_id.as_ref().map(|id| {
+    &ctx.routes.segments[&sequence.containing_segment_id]
+  });
 
-  let path_param_value_ident = format!("path_param_{}", segment.hex);
+  let RouteSequenceMatcher::Dynamic(seq) = &sequence.matcher else {
+    unreachable!("Unexpected sequence matcher type");
+  };
+
+  let subtrie = render_trie(&subtrie, sequence.url_segment_direction);
+
+  let path_param_value_ident = format!("path_param_{}", seq.param_name);
   let path_param_value_ident = Ident::new(&path_param_value_ident, Span::mixed_site());
-  
-  let path_param_value_type = dyn_seq.get_rust_type();
 
   let mut prefix = String::new();
-  
-  let target = match dyn_seq.seg_count {
-    Arity::Exact(1) => {
-      if segment_suffix.is_empty() {
-        quote! {
-          let (value, path) = Self::split_segment_end(path);
-          let #path_param_value_ident: #path_param_value_type = value.into();
-          #subtrie
-        }
-      } else {
-        quote! {
-          if let Some((value, path)) = Self::strip_segment_suffix(path, #segment_suffix) {
-            let #path_param_value_ident: #path_param_value_type = value.into();
+
+  let target = match (seq.seg_count, seq.char_len, sequence.url_path_direction, sequence.url_segment_direction) {
+    (Arity::Exact(1), Arity::Exact(char_len), MatchDirection::Ltr, MatchDirection::Ltr) => {
+      quote! {
+        if let Some((#path_param_value_ident, path)) = path.split_at_checked(#char_len) {
+          if !#path_param_value_ident.contains('/') {
             #subtrie
           }
-        }
+        };
+      }
+    }
+    (Arity::Exact(1), Arity::Exact(char_len), MatchDirection::Ltr, MatchDirection::Rtl) => {
+      quote! {
+        let (path, segment) = Self::split_segment_end(path);
+        
+        if let Some((#path_param_value_ident, path)) = path.split_at_checked(#char_len) {
+          if !#path_param_value_ident.contains('/') {
+            #subtrie
+          }
+        };
       }
     }
     Arity::Exact(count) => {
       // "Exact(0)" arities are converted to Groups
       // "Exact(1)" is handled above
-      assert!(*count > 1);
+      assert!(count > 1);
 
       prefix.push('/');
 
       quote! {
-        let mut #path_param_value_ident: #path_param_value_type = [const { String::new() }; #count];
+        let mut #path_param_value_ident: &str = [const { String::new() }; #count];
 
         let mut path = path;
         let mut matched = true;

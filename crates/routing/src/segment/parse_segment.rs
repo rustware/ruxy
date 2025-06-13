@@ -1,6 +1,6 @@
 use ::ruxy_util::dollar_encoding;
 
-use crate::{Arity, DynamicSequence, SegmentEffect, TypedSequence, UrlMatcherSequence};
+use crate::segment::{Arity, DynamicSequence, SegmentEffect, TypedSequence, UrlMatcherSequence};
 
 const SLOT_START: char = '@';
 const CUSTOM_MATCH_START: char = '~';
@@ -129,15 +129,6 @@ pub fn parse_segment(dir_name: &str) -> Result<SegmentEffect, String> {
     let UrlMatcherSequence { typed: TypedSequence::Dynamic(dyn_seq), .. } = sequence else {
       continue;
     };
-
-    // Doesn't apply anymore
-    // if sequences.len() > 1 && !matches!(dyn_seq.seg_count, Arity::Exact(1)) {
-    //   return Err(format!(
-    //     "Dynamic sequence with segment arity other than 1 cannot have prefix or suffix.\r\n\
-    //     Use `{{{ident}[1]}}` or `{{{ident}}}` shorthand to be able to use a prefix or suffix in the same segment.",
-    //     ident = dyn_seq.param_name
-    //   ));
-    // }
 
     if matches!(dyn_seq.seg_count, Arity::Exact(0)) {
       // Sequence with segment count 0 makes the segment effectively a Group Segment

@@ -3,8 +3,8 @@ mod test;
 
 use std::path::Path;
 
-pub use crate::sequence::*;
-pub use crate::segment::*;
+use crate::sequence::*;
+use crate::segment::*;
 
 /// A complete representation of user application route tree parsed from the file system.
 #[derive(Debug)]
@@ -17,7 +17,7 @@ pub struct RouteTree {
 impl RouteTree {
   /// Creates a new RouteTree by parsing the filesystem at the provided path (routes directory).
   pub fn new(routes_dir: &Path) -> Self {
-    let (segments, root_id) = build_segments(routes_dir, routes_dir, 0, None);
+    let (segments, root_id) = build_segment_map(routes_dir, routes_dir, 0, None);
 
     // Returned self-id is an empty string for invalid segments too, we need to check
     // the actual presence of the root segment in the HashMap. If no routes exist,

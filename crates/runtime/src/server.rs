@@ -74,11 +74,25 @@ pub trait Server: Send + 'static {
   /// `split_segment_end("remaining/rest/of/path")`
   /// returns `Some(("remaining", "/rest/of/path"))`
   #[inline]
-  fn split_segment_end(path: &str, ) -> (&str, &str) {
-     match path.find('/') {
-      Some(i) => (&path[..i], &path[i..]),
-      None => (path, ""),
-    }
+  fn split_segment_end(path: &str) -> (&str, &str) {
+    // TODO: split_at_checked?
+    path.find('/').map(|i| path.split_at(i)).unwrap_or((path, ""))
+  }
+
+  /// Returns the remaining characters of the current segment from `path`,
+  /// and the remaining characters of `path` after the segment end, in
+  /// reversed order.
+  /// 
+  /// This function does NOT consume the leading slash at the start of segment,
+  /// and returns it as part of the remaining characters (<remaining>, ).
+  /// 
+  /// Example:
+  /// `split_segment_end("rest/of/remaining")`
+  /// returns `Some(("rest/of/", "remaining"))`
+  #[inline]
+  fn split_segment_start(path: &str) -> (&str, &str) {
+    // TODO: split_at_checked?
+    path.rfind('/').map(|i| path.split_at(i + 1)).unwrap_or((path, ""))
   }
 
   /// Strips the suffix of the current URL segment and returns a tuple containing
