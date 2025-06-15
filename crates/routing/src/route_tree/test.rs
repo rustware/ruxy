@@ -8,5 +8,5 @@ fn test_build_routes() {
   let tree = RouteTree::new(&routes_dir);
   
   // TODO: Test the resulting tree
-  dbg!(tree.root_sequence);
+  dbg!(tree.root_instruction);
 }

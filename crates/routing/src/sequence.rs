@@ -1,10 +1,8 @@
-mod build_sequence_tree;
 mod get_route_sequences;
 mod get_segment_sequences;
 
 use crate::segment::{Arity, DynamicSequence};
 
-pub use build_sequence_tree::*;
 pub use get_route_sequences::*;
 
 #[derive(Debug, Clone, Eq, PartialEq)]

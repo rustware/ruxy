@@ -164,6 +164,10 @@ pub struct DynamicSequence {
   pub seg_count: Arity,
   /// The number of characters to match.
   pub char_len: Arity,
+  /// Whether this sequence is the first sequence of the Route Segment.
+  pub is_first: bool,
+  /// Whether this sequence is the last sequence of the Route Segment.
+  pub is_last: bool,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -191,7 +195,13 @@ impl DynamicSequence {
 
 impl Default for DynamicSequence {
   fn default() -> Self {
-    Self { param_name: "".to_string(), seg_count: Arity::Exact(1), char_len: Arity::Range(1, None) }
+    Self {
+      param_name: "".to_string(),
+      seg_count: Arity::Exact(1),
+      char_len: Arity::Range(1, None),
+      is_first: false,
+      is_last: false,
+    }
   }
 }
 

@@ -20,7 +20,7 @@ pub fn generate(config: &AppConfig, routes: &RouteTree) -> TokenStream {
   let ctx = GenContext { config, routes };
 
   // Generate a Radix Trie recursively for all sequences from the root
-  let radix_trie = create_radix_trie(&ctx, &routes.root_sequence);
+  let radix_trie = create_radix_trie(&ctx, &routes.root_instruction);
 
   // Render the Radix Trie into a TokenStream (we always start with LTR matching)
   let radix_trie = render_trie(&radix_trie, MatchDirection::Ltr);

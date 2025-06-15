@@ -3,7 +3,8 @@ mod test;
 
 use std::path::Path;
 
-use crate::sequence::*;
+use crate::instruction::create_instructions::create_instructions;
+use crate::instruction::MatchInstruction;
 use crate::segment::*;
 
 /// A complete representation of user application route tree parsed from the file system.
@@ -11,7 +12,7 @@ use crate::segment::*;
 pub struct RouteTree {
   pub root_id: Option<String>,
   pub segments: SegmentMap,
-  pub root_sequence: RouteSequence,
+  pub root_instruction: MatchInstruction,
 }
 
 impl RouteTree {
@@ -24,9 +25,9 @@ impl RouteTree {
     // neither does the root segment.
     let root_id = if segments.contains_key(&root_id) { Some(root_id) } else { None };
 
-    let root_sequence = build_sequence_tree(&segments);
+    let root_instruction = create_instructions(&segments);
     
-    RouteTree { segments, root_id, root_sequence }
+    RouteTree { segments, root_id, root_instruction }
   }
 
   pub fn get_compile_errors(&self) -> Vec<String> {

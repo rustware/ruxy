@@ -1,22 +1,19 @@
 use crate::segment::Arity;
 use crate::sequence::MatchDirection;
 
-mod create_instructions;
+pub mod create_instructions;
 mod inflate_instructions;
 mod instructors;
 
 #[derive(Debug)]
 pub struct MatchInstruction {
   kind: InstructionKind,
-  next: Vec<MatchInstruction>
+  next: Vec<MatchInstruction>,
 }
 
 impl Default for MatchInstruction {
   fn default() -> Self {
-    Self {
-      kind: InstructionKind::Skip,
-      next: vec![],
-    }
+    Self { kind: InstructionKind::Skip, next: vec![] }
   }
 }
 
@@ -30,28 +27,51 @@ impl PartialEq for MatchInstruction {
 pub enum InstructionKind {
   /// Jump to the next instruction while ignoring the current one.
   Skip,
-  /// Create a separate variable holding a string slice of the path.
-  /// This will then be used for matching in this isolated slice.
-  CreateView(CreateViewInstruction),
+  /// Create a separate variable initialized with a string slice of the path, where the string slice
+  /// is holding a rest of URL segment (up until a slash or end of URL) in the given direction.
+  /// This will then be used for matching inside this isolated slice.
+  /// The .2 is the character offset to exclude from the view on its end (or start if RTL).
+  /// Don't forget to consume the contents of the view from the path.
+  ConsumeIntoView(MatchDirection, usize),
   /// The .0 is the name of the parameter to capture.
   /// This should be as simple as `let var = &path[..]`
   CaptureRestOfPath(String),
   /// The .0 is the count of the segments to consume.
   /// The .1 is the character length constraints that must be checked within each segment.
-  ConsumeSegmentCount(usize, Arity),
+  ConsumeSegmentCount(usize, Arity, MatchDirection),
   /// The .0 is the upper limit of the segments to consume.
   /// The .1 is the character length constraints that must be checked within each segment.
   ConsumeUpToSegmentCount(usize, Arity),
   /// Consume all remaining segments from the path.
   /// The .0 is the character length constraints that must be checked within each segment.
   ConsumeAllSegments(Arity),
+  /// Check if the path is empty or if the first character is a slash (if so, consume it).
+  /// ```rs
+  /// if let Some(path) = path.strip_prefix('/').or_else(|| if path.is_empty() { Some("") } else { None }) {}
+  /// ```
+  PathEmptyOrConsumeSlash,
+  /// The .0 is the name of the parameter to capture.
+  /// The .1 is the exact number of characters to capture.
+  CaptureExactChars(String, usize, MatchDirection),
+  /// The .0 is the name of the parameter to capture.
+  /// The .1 is the exact number of characters to capture from the view.
+  CaptureExactCharsInView(String, usize, MatchDirection),
+  /// The .0 is is the exact number of characters to consume from the view.
+  ConsumeExactCharsInView(usize, MatchDirection),
+  /// Capture the rest of the characters in the view.
+  /// The .0 is the name of the parameter to capture.
+  CaptureRestOfView(String),
+  /// Checks whether the rest of the view has the length between the given bounds.
+  CheckCharLenInRestOfView(usize, Option<usize>),
   /// Invoke a user-specified matcher.
   /// The .0 is the ID of the Route Segment that contains the matcher.
   InvokeCustomMatcher(String),
   /// The .0 is the name of the parameter to capture.
   CaptureParam(String, MatchTarget),
-  /// Consume a part of the path, .0 is the literal
+  /// Consume a part of the path, .0 is the literal.
   ConsumeLiteral(String, MatchDirection),
+  /// Consume a part of the view, .0 is the literal.
+  ConsumeLiteralInView(String, MatchDirection),
   /// Check if the URL is at the end (beware of special handling of slash in root segment).
   CheckEndOfUrl,
   /// Respond with the handler of the provided Segment ID
@@ -59,12 +79,6 @@ pub enum InstructionKind {
   /// Respond with the Not Found handler of the provided Segment ID.
   /// This should be the last child in the series of children instructions.
   InvokeNotFoundHandler(String),
-}
-
-/// View is some range of URL characters (e.g. from end to 3 slashes left, exclusive)
-#[derive(Debug, PartialEq)]
-pub struct CreateViewInstruction {
-  
 }
 
 #[derive(Debug, PartialEq)]
@@ -75,9 +89,7 @@ pub struct MatchTarget {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct ConsumeInstruction {
-  
-}
+pub struct ConsumeInstruction {}
 
 #[derive(Debug, PartialEq)]
 pub enum TargetKind {

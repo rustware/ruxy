@@ -468,7 +468,19 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
       Dynamic sequences must be properly closed.",
     ));
   };
-
+  
+  parsed_sequences.first_mut().map(|seq| {
+    if let TypedSequence::Dynamic(seq) = &mut seq.typed {
+      seq.is_first = true;
+    }
+  });
+  
+  parsed_sequences.last_mut().map(|seq| {
+    if let TypedSequence::Dynamic(seq) = &mut seq.typed {
+      seq.is_last = true;
+    }
+  });
+  
   Ok(parsed_sequences)
 }
 

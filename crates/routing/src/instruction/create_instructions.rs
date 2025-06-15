@@ -82,7 +82,7 @@ fn create_route_instructions_loop(ctx: &mut CreateInstructionsContext) {
     _ => {}
   };
 
-  // Handle end of route. Keep this the last code in this function.
+  // Handle end of route
   if ctx.sequences.is_empty() && !ctx.path_rtl {
     ctx.instructions.extend([
       MatchInstruction { kind: InstructionKind::CheckEndOfUrl, ..Default::default() },
