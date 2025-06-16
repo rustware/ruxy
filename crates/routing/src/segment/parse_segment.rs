@@ -60,7 +60,7 @@ impl SpecialChar {
 
 /// Route Segment directory naming conventions:
 ///
-/// Dynamic sequence syntax: `{<ident><segment count specifier><character length specifier>}`,
+/// Dynamic sequence syntax: `{<ident><optional segment count specifier><optional character length specifier>}`,
 /// where both the Segment Count Specifier and Character Length Specifier are optional.
 ///
 /// `{foo}`:            Simple dynamic sequence replacing `foo` with the value from the URL.
@@ -196,8 +196,8 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
 
         if name.is_empty() {
           return Err(format!(
-            "Unexpected character \"{ch}\" at position {index} after dynamic sequence opening bracket – `{{`.\r\n\
-            Dynamic sequence opening bracket must be followed by an identifier of this dynamic sequence.\r\n\
+            "Unexpected character \"{ch}\" at position {index} after dynamic sequence opening bracket – `{{`.\n\
+            Dynamic sequence opening bracket must be followed by an identifier of this dynamic sequence.\n\
             Allowed characters in dynamic sequence identifiers are a-z, A-Z, 0-9 and _."
           ));
         }
@@ -224,7 +224,7 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
         }
 
         return Err(format!(
-          "Unexpected character \"{ch}\" at position {index} (in a dynamic sequence identifier).\r\n\
+          "Unexpected character \"{ch}\" at position {index} (in a dynamic sequence identifier).\n\
           Dynamic sequence name can only contain a-z, A-Z, 0-9 and _, and can only be followed by \
           a Segment Count specifier opening bracket – `[`, a Character Length opening bracket – `(`, \
           or the dynamic sequence closing bracket – `}}`."
@@ -238,7 +238,7 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
 
         if count_min.is_empty() {
           return Err(format!(
-            "Unexpected character \"{ch}\" at position {index} (after Segment Count specifier opening bracket – `[`).\r\n\
+            "Unexpected character \"{ch}\" at position {index} (after Segment Count specifier opening bracket – `[`).\n\
             Segment Count specifier opening bracket must be followed by a number (exact or part of a range)."
           ));
         }
@@ -257,13 +257,13 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
             }
 
             return Err(format!(
-              "Unexpected character \"{ch}\" after a dot in Segment Count specifier.\r\n\
+              "Unexpected character \"{ch}\" after a dot in Segment Count specifier.\n\
               Single dot in Segment Count specifier can only be followed by another dot, composing a range operator – `..`.",
             ));
           }
 
           return Err(String::from(
-            "Directory name ends after a dot inside Segment Count specifier of the dynamic sequence.\r\n\
+            "Directory name ends after a dot inside Segment Count specifier of the dynamic sequence.\n\
             Both Segment Count specifier and the enclosing dynamic sequence must be properly ended.",
           ));
         }
@@ -290,7 +290,7 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
         }
 
         return Err(format!(
-          "Unexpected character \"{ch}\" in Segment Count specifier numeric bound.\r\n\
+          "Unexpected character \"{ch}\" in Segment Count specifier numeric bound.\n\
           Segment Count specifier numeric bound can only contain numbers, and can only be followed by \
           either a Segment Count specifier closing bracket – `]`, or range operator – `..`."
         ));
@@ -303,7 +303,7 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
 
         if ch == '.' && count_max.is_empty() {
           return Err(String::from(
-            "Unexpected additional dot after Segment Count range operator – `..`.\r\n\
+            "Unexpected additional dot after Segment Count range operator – `..`.\n\
             Segment Count range operator consists of exactly two dots (`..`) followed by either a number or \
             a Segment Count specifier closing bracket – `]`.",
           ));
@@ -342,7 +342,7 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
         }
 
         return Err(format!(
-          "Unexpected character \"{ch}\" in Segment Count specifier upper bound.\r\n\
+          "Unexpected character \"{ch}\" in Segment Count specifier upper bound.\n\
           Segment Count specifier upper bound can only contain numbers, and can only be followed by \
           a Segment Count specifier closing bracket – `]`."
         ));
@@ -355,7 +355,7 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
 
         if len_min.is_empty() {
           return Err(format!(
-            "Unexpected character \"{ch}\" at position {index} (after Character Length specifier opening bracket – `(`).\r\n\
+            "Unexpected character \"{ch}\" at position {index} (after Character Length specifier opening bracket – `(`).\n\
             Character Length specifier opening bracket must be followed by a number (exact or part of a range)."
           ));
         }
@@ -374,13 +374,13 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
             }
 
             return Err(format!(
-              "Unexpected character \"{ch}\" after a dot in Character Length specifier.\r\n\
+              "Unexpected character \"{ch}\" after a dot in Character Length specifier.\n\
               Single dot in Character Length specifier can only be followed by another dot, composing a range operator – `..`.",
             ));
           }
 
           return Err(String::from(
-            "Directory name ends after a dot inside Character Length specifier of the dynamic sequence.\r\n\
+            "Directory name ends after a dot inside Character Length specifier of the dynamic sequence.\n\
             Both Character Length specifier and the enclosing dynamic sequence must be properly ended.",
           ));
         }
@@ -401,7 +401,7 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
         }
 
         return Err(format!(
-          "Unexpected character \"{ch}\" in Character Length specifier numeric bound.\r\n\
+          "Unexpected character \"{ch}\" in Character Length specifier numeric bound.\n\
           Character Length specifier numeric bound can only contain numbers, and can only be followed by \
           either a Character Length specifier closing bracket – `)`, or range operator – `..`."
         ));
@@ -414,7 +414,7 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
 
         if ch == '.' && len_max.is_empty() {
           return Err(String::from(
-            "Unexpected additional dot after Character Length range operator – `..`.\r\n\
+            "Unexpected additional dot after Character Length range operator – `..`.\n\
             Character Length range operator consists of exactly two dots (`..`) followed by either a number or \
             a Character Length specifier closing bracket – `)`.",
           ));
@@ -448,7 +448,7 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
         }
 
         return Err(format!(
-          "Unexpected character \"{ch}\" in Character Length specifier upper bound.\r\n\
+          "Unexpected character \"{ch}\" in Character Length specifier upper bound.\n\
           Character Length specifier upper bound can only contain numbers, and can only be followed by \
           a Character Length specifier closing bracket – `)`."
         ));
@@ -464,23 +464,51 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
   } else {
     // Handle invalid final parser state
     return Err(String::from(
-      "A dynamic sequence is started with an opening bracket – `{`, but never closed.\r\n\
+      "A dynamic sequence is started with an opening bracket – `{`, but never closed.\n\
       Dynamic sequences must be properly closed.",
     ));
   };
-  
-  parsed_sequences.first_mut().map(|seq| {
+
+  let mut seen_char_len_range = false;
+
+  for sequence in parsed_sequences.iter() {
+    if let TypedSequence::Dynamic(seq) = &sequence.typed {
+      if matches!(seq.char_len, Arity::Range(_, _)) {
+        if seen_char_len_range {
+          return Err(String::from(
+            "Found more than 1 sequence with Character Length of type Range inside this segment.\n\
+            Each Route Segment can contain at most 1 sequence with Character Length of type Range.\n\
+            Please note that Character Length of type Range is the default (`{param}` maps to `{param(1..)}`).\n\
+            If you want to have multiple Dynamic Sequences inside a single Route Segment, make sure that only one \
+            has a Character Length of type Range – `{param(n..?)}`, while others are fixed-length – `{param(n)}`.",
+          ));
+        }
+
+        seen_char_len_range = true;
+      }
+
+      if !matches!(seq.seg_count, Arity::Exact(1)) && parsed_sequences.len() > 1 {
+        return Err(String::from(
+          "All Dynamic Sequences in a Route Segment with multiple sequences must have Segment Count exactly 1.\n\
+            Found multiple sequences in this Route Segment, one of which has Segment Count other than 1.\n\
+            If you want to use a Dynamic Sequence with Segment Count other than 1, please separate it into its own segment.",
+        ));
+      }
+    }
+  }
+
+  if let Some(seq) = parsed_sequences.first_mut() {
     if let TypedSequence::Dynamic(seq) = &mut seq.typed {
       seq.is_first = true;
     }
-  });
-  
-  parsed_sequences.last_mut().map(|seq| {
+  }
+
+  if let Some(seq) = parsed_sequences.last_mut() {
     if let TypedSequence::Dynamic(seq) = &mut seq.typed {
       seq.is_last = true;
     }
-  });
-  
+  }
+
   Ok(parsed_sequences)
 }
 
@@ -489,14 +517,14 @@ fn parse_sequences(dir_name: &str) -> Result<Vec<UrlMatcherSequence>, String> {
 fn decode_escape_sequence(ch1: Option<char>, ch2: Option<char>, start_pos: usize) -> Result<String, String> {
   let (Some(ch1), Some(ch2)) = (ch1, ch2) else {
     return Err(format!(
-      "Incomplete dollar-encoding at position {start_pos}.\r\n\
+      "Incomplete dollar-encoding at position {start_pos}.\n\
       If you want to use a literal dollar character, encode it as \"$24\".",
     ));
   };
 
   if !ch1.is_ascii_hexdigit() || !ch2.is_ascii_hexdigit() {
     return Err(format!(
-      "Invalid dollar-encoding \"${ch1}{ch2}\" at position {start_pos}.\r\n\
+      "Invalid dollar-encoding \"${ch1}{ch2}\" at position {start_pos}.\n\
       If you want to use a literal dollar character, encode it as \"$24\".",
     ));
   }
@@ -505,7 +533,7 @@ fn decode_escape_sequence(ch1: Option<char>, ch2: Option<char>, start_pos: usize
 
   let decoded = dollar_encoding::decode(&seq).map_err(|_| {
     format!(
-      "Invalid dollar-encoding in directory name at position {start_pos}.\r\n\
+      "Invalid dollar-encoding in directory name at position {start_pos}.\n\
       If you want to use a literal dollar character, encode it as \"$24\".",
     )
   })?;
@@ -522,7 +550,7 @@ fn unexpected_special_char_err(ch: char, pos: usize) -> String {
 
 fn unexpected_char_after_segcount_close_err(ch: char, pos: usize) -> String {
   format!(
-    "Unexpected character \"{ch}\" at position {pos} after a Segment Count specifier closing bracket – `]`.\r\n\
+    "Unexpected character \"{ch}\" at position {pos} after a Segment Count specifier closing bracket – `]`.\n\
     Segment Count specifier closing bracket can only be followed by either the dynamic sequence closing bracket – `}}`, or \
     a Segment Count specifier opening bracket – `[`"
   )
@@ -530,21 +558,21 @@ fn unexpected_char_after_segcount_close_err(ch: char, pos: usize) -> String {
 
 fn dirname_end_after_segcount_close_err() -> String {
   String::from(
-    "Directory name ends after the Segment Count specifier closing bracket – `]`.\r\n\
+    "Directory name ends after the Segment Count specifier closing bracket – `]`.\n\
     Did you forget to include a `}` to end the enclosing dynamic sequence?",
   )
 }
 
 fn unexpected_char_after_charlen_close_err(ch: char, pos: usize) -> String {
   format!(
-    "Unexpected character \"{ch}\" at position {pos} after a Character Length specifier closing bracket – `)`.\r\n\
+    "Unexpected character \"{ch}\" at position {pos} after a Character Length specifier closing bracket – `)`.\n\
     Character Length specifier closing bracket can only be followed by the dynamic sequence closing bracket – `}}`."
   )
 }
 
 fn dirname_end_after_charlen_close_err() -> String {
   String::from(
-    "Directory name ends after the Character Length specifier closing bracket – `)`.\r\n\
+    "Directory name ends after the Character Length specifier closing bracket – `)`.\n\
     Did you forget to include a `}` to end the enclosing dynamic sequence?",
   )
 }
@@ -556,16 +584,16 @@ fn arity_unsupported_digit_err(num: String) -> String {
 fn validate_slot_name(slot_name: &str) -> Result<(), String> {
   if slot_name.is_empty() {
     return Err(String::from(
-      "Slots must have a name.\r\n\
-        If you want to match the `@` character literally, dollar-escape it as `$40`.\r\n\
+      "Slots must have a name.\n\
+        If you want to match the `@` character literally, dollar-escape it as `$40`.\n\
         Also please note that you might want to match the URL-encoded version `%40` instead.",
     ));
   }
 
   if !slot_name.chars().all(|ch| matches!(ch, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_')) {
     return Err(String::from(
-      "Slot names can only contain a-z, A-Z, 0-9 and _.\r\n\
-        If you want to match the leading `@` character literally, dollar-escape it as `$40`.\r\n\
+      "Slot names can only contain a-z, A-Z, 0-9 and _.\n\
+        If you want to match the leading `@` character literally, dollar-escape it as `$40`.\n\
         Also please note that you might want to match the URL-encoded version `%40` instead.",
     ));
   }
@@ -576,14 +604,14 @@ fn validate_slot_name(slot_name: &str) -> Result<(), String> {
 fn validate_custom_match_identifier(segment_name: &str) -> Result<(), String> {
   if segment_name.is_empty() {
     return Err(String::from(
-      "Custom Match segments must have a name.\r\n\
+      "Custom Match segments must have a name.\n\
         If you want to match the `~` character literally, dollar-escape it as `$7E`.",
     ));
   }
 
   if !segment_name.chars().all(|ch| matches!(ch, 'a'..='z' | 'A'..='Z' | '0'..='9' | '_')) {
     return Err(String::from(
-      "Custom Match segment names can only contain a-z, A-Z, 0-9 and _.\r\n\
+      "Custom Match segment names can only contain a-z, A-Z, 0-9 and _.\n\
         If you want to match the leading `~` character literally, dollar-escape it as `$7E`.",
     ));
   }
@@ -619,6 +647,14 @@ mod tests {
       TypedSequence::Dynamic(DynamicSequence { seg_count: Arity::Exact(2), char_len: Arity::Range(1, None), .. })
     ));
 
+    let dirname = "{myparam[0..](2..)}";
+    let SegmentEffect::UrlMatcher { sequences } = parse_segment(dirname).unwrap() else { unreachable!() };
+    assert_eq!(sequences.len(), 1);
+    assert!(matches!(
+      sequences[0].typed,
+      TypedSequence::Dynamic(DynamicSequence { seg_count: Arity::Range(0, None), char_len: Arity::Range(2, None), .. })
+    ));
+
     let dirname = "{myparam(2)}";
     let SegmentEffect::UrlMatcher { sequences } = parse_segment(dirname).unwrap() else { unreachable!() };
     assert_eq!(sequences.len(), 1);
@@ -627,7 +663,7 @@ mod tests {
       TypedSequence::Dynamic(DynamicSequence { seg_count: Arity::Exact(1), char_len: Arity::Exact(2), .. })
     ));
 
-    let dirname = "foo-{myparam[2](3)}-bar-{myparam[0..](2..5)}-suffix";
+    let dirname = "foo-{myparam(3)}-bar-{myparam(2..5)}-suffix";
     let SegmentEffect::UrlMatcher { sequences } = parse_segment(dirname).unwrap() else { unreachable!() };
     assert_eq!(sequences.len(), 5);
     assert!(matches!(
@@ -640,12 +676,12 @@ mod tests {
     ));
     assert!(matches!(
       sequences[1].typed,
-      TypedSequence::Dynamic(DynamicSequence { seg_count: Arity::Exact(2), char_len: Arity::Exact(3), .. })
+      TypedSequence::Dynamic(DynamicSequence { seg_count: Arity::Exact(1), char_len: Arity::Exact(3), .. })
     ));
     assert!(matches!(
       sequences[3].typed,
       TypedSequence::Dynamic(DynamicSequence {
-        seg_count: Arity::Range(0, None),
+        seg_count: Arity::Exact(1),
         char_len: Arity::Range(2, Some(5)),
         ..
       })

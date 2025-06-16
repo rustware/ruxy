@@ -2,7 +2,7 @@
 mod test;
 
 use std::path::Path;
-use ruxy_config::AppConfig;
+
 use crate::instruction::create_instructions::create_instructions;
 use crate::instruction::MatchInstruction;
 use crate::segment::*;
@@ -13,6 +13,7 @@ pub struct RouteTree {
   pub root_id: Option<String>,
   pub segments: SegmentMap,
   pub root_instruction: MatchInstruction,
+  pub routes_compile_errors: Vec<String>,
 }
 
 impl RouteTree {
@@ -25,32 +26,39 @@ impl RouteTree {
     // neither does the root segment.
     let root_id = if segments.contains_key(&root_id) { Some(root_id) } else { None };
 
-    let root_instruction = create_instructions(&segments);
+    let (root_instruction, routes_compile_errors) = match create_instructions(&segments) {
+      Ok(instructions) => (instructions, vec![]),
+      Err(errors) => (Default::default(), errors),
+    };
     
-    RouteTree { segments, root_id, root_instruction }
+    RouteTree { segments, root_id, root_instruction, routes_compile_errors }
   }
 
   pub fn get_compile_errors(&self) -> Vec<String> {
-    let errors = self.segments.values().map(|segment| {
+    let mut errors = vec![];
+    
+    for segment in self.segments.values() {
       let path = match segment.identifier.as_str() {
         "" => "routes".to_string(),
         _ => format!("routes/{}", segment.identifier),
       };
 
-      let errors = segment.compile_errors.iter().map(|e| {
+      let segment_errors = segment.compile_errors.iter().map(|e| {
         format!(
-          "Invalid route segment: \"{dir_name}\"\r\n\
-          {e}\r\n\
-          Full path: {path}\r\n\
+          "Invalid route segment: \"{dir_name}\"\n\
+          {e}\n\
+          Full path: {path}\n\
           Read more about routing conventions at https://ruxy.dev/docs/routing",
           dir_name = segment.dir_name,
         )
       });
 
-      errors.collect::<Vec<_>>()
-    });
-
-    errors.flatten().collect()
+      errors.extend(segment_errors);
+    }
+    
+    errors.extend(self.routes_compile_errors.clone());
+    
+    errors
   }
 
   pub fn get_root_segment(&self) -> Option<&RouteSegment> {

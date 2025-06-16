@@ -8,14 +8,29 @@ use crate::instruction::{InstructionKind, MatchDirection, MatchInstruction};
 use crate::segment::{RouteSegment, SegmentMap};
 use crate::sequence::{RouteSequence, get_route_sequences};
 
-pub fn create_instructions(segments: &SegmentMap) -> MatchInstruction {
-  let routes = segments.values().filter_map(|s| {
+pub fn create_instructions(segments: &SegmentMap) -> Result<MatchInstruction, Vec<String>> {
+  let route_leaves = segments.values().filter_map(|s| {
     s.route_handler.as_ref()?;
-    let sequences = get_route_sequences(segments, s);
-    Some(create_route_instructions(sequences, s))
+    Some(s)
   });
+  
+  let mut routes = vec![];
+  let mut errors = vec![];
+  
+  for route in route_leaves {
+    match get_route_sequences(segments, route) {
+      Ok(sequences) => routes.push(create_route_instructions(sequences, route)),
+      Err(errs) => errors.extend(errs),
+    }
+  }
 
-  inflate_instructions(routes.collect())
+  if !errors.is_empty() {
+    return Err(errors);
+  }
+  
+  // TODO: Validate non-ambiguity between routes
+  
+  Ok(inflate_instructions(routes))
 
   // TODO: Create a radix trie from MatchInstruction prefixes instead of string prefixes
 }
@@ -67,10 +82,6 @@ fn create_root_instructions(segment: &RouteSegment) -> Vec<MatchInstruction> {
 }
 
 fn create_route_instructions_loop(ctx: &mut CreateInstructionsContext) {
-  // We can create instructions that say e.g. "jump to the beginning of the 3rd segment from end of URL"
-  // and we'll be _removing_ all processed sequences from the `sequences` vec. When the vec is empty,
-  // we'll insert a final instruction ("check if the URL is empty and match the route").
-
   // Handle SegCount:Range
   if ctx.sequences[0].is_seg_count_range() {
     if ctx.sequences.len() > 1 && !ctx.path_rtl {

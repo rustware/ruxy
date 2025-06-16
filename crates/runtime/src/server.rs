@@ -1,8 +1,9 @@
 use std::future::Future;
 use std::net::SocketAddr;
-
+use bytes::Bytes;
 use hyper::service::service_fn;
 use hyper::{Response, http};
+use hyper::http::HeaderValue;
 use hyper_util::rt::TokioIo;
 use hyper_util::server::conn;
 use tokio::net::TcpListener;
@@ -63,112 +64,32 @@ pub trait Server: Send + 'static {
 
   /// Implemented by the `app!` macro
   fn handler(req: HyperRequest) -> impl Future<Output = HandlerResult> + Send;
-
-  /// Returns the remaining characters of the current segment from `path`,
-  /// and the remaining characters of `path` after the segment end.
-  /// 
-  /// This function does NOT consume the trailing slash at the end of segment,
-  /// and returns it as part of the remaining characters (_, <remaining>).
-  /// 
-  /// Example:
-  /// `split_segment_end("remaining/rest/of/path")`
-  /// returns `Some(("remaining", "/rest/of/path"))`
-  #[inline]
-  fn split_segment_end(path: &str) -> (&str, &str) {
-    // TODO: split_at_checked?
-    path.find('/').map(|i| path.split_at(i)).unwrap_or((path, ""))
-  }
-
-  /// Returns the remaining characters of the current segment from `path`,
-  /// and the remaining characters of `path` after the segment end, in
-  /// reversed order.
-  /// 
-  /// This function does NOT consume the leading slash at the start of segment,
-  /// and returns it as part of the remaining characters (<remaining>, ).
-  /// 
-  /// Example:
-  /// `split_segment_end("rest/of/remaining")`
-  /// returns `Some(("rest/of/", "remaining"))`
-  #[inline]
-  fn split_segment_start(path: &str) -> (&str, &str) {
-    // TODO: split_at_checked?
-    path.rfind('/').map(|i| path.split_at(i + 1)).unwrap_or((path, ""))
-  }
-
-  /// Strips the suffix of the current URL segment and returns a tuple containing
-  /// the value before the suffix, and the rest of path.
-  ///
-  /// Example:
-  /// `strip_segment_suffix("segment1-mysuffix/rest/of/path", "-mysuffix")`
-  /// returns `Some(("segment1", "/rest/of/path"))`
-  ///
-  /// Returns `None` if the suffix was not found at the end of the current URL segment.
-  #[inline]
-  fn strip_segment_suffix<'a>(path: &'a str, suffix: &str) -> Option<(&'a str, &'a str)> {
-    let (segment, rest) = Self::split_segment_end(path);
-    segment.strip_suffix(suffix).map(|stripped| (stripped, rest))
-  }
-  
-  /// Strips the leading slash of the provided `path`.
-  #[inline]
-  fn strip_prefix_slash(path: &str) -> &str {
-    path.strip_prefix('/').unwrap_or(path)
-  }
   
   /// Produces a response that redirects the user to the provided `path`.
   #[inline]
-  fn redirect_to_path(request: &HyperRequest, path: &str) -> HandlerResult {
-    todo!()
+  fn redirect_to_path(_request: &HyperRequest, path: &str) -> HandlerResult {
+    let path = if path.is_empty() { "/" } else { path };
+    
+    HandlerResult {
+      response: http::Response::builder().status(308).header(http::header::LOCATION, path).body(ResponseBody::new())
+    }
   }
   
   /// Produces a response that redirects the user to the provided `path` with added trailing slash.
   #[inline]
-  fn redirect_to_added_slash(request: &HyperRequest, path: &str) -> HandlerResult {
-    todo!()
+  fn redirect_to_added_slash(_request: &HyperRequest, path: &str) -> HandlerResult {
+    let mut location = Vec::with_capacity(path.len() + 1);
+    location.extend_from_slice(path.as_bytes());
+    location.extend_from_slice(b"/");
+    
+    let location = HeaderValue::from_bytes(location.as_slice()).unwrap();
+    
+    HandlerResult {
+      response: http::Response::builder().status(308).header(http::header::LOCATION, location).body(ResponseBody::new())
+    }
   }
 }
 
 pub struct HandlerResult {
   pub response: http::Result<Response<ResponseBody>>,
-}
-
-#[cfg(test)]
-mod tests {
-  use super::*;
-
-  struct TestServer;
-
-  impl Server for TestServer {
-    async fn handler(_req: HyperRequest) -> HandlerResult {
-      HandlerResult { response: Ok(Response::new(ResponseBody::new())) }
-    }
-  }
-
-  #[test]
-  fn test_split_segment_end() {
-    assert_eq!(TestServer::split_segment_end("remaining/rest/of/path"), ("remaining", "/rest/of/path"));
-    assert_eq!(TestServer::split_segment_end("remaining/"), ("remaining", "/"));
-    assert_eq!(TestServer::split_segment_end("remaining"), ("remaining", ""));
-    assert_eq!(TestServer::split_segment_end("/rest"), ("", "/rest"));
-    assert_eq!(TestServer::split_segment_end("/"), ("", "/"));
-    assert_eq!(TestServer::split_segment_end(""), ("", ""));
-  }
-
-  #[test]
-  fn test_strip_segment_suffix() {
-    assert_eq!(TestServer::strip_segment_suffix("pre-suf/rest/of/path", "-suf"), Some(("pre", "/rest/of/path")));
-    assert_eq!(TestServer::strip_segment_suffix("pre-suf", "-suf"), Some(("pre", "")));
-    assert_eq!(TestServer::strip_segment_suffix("pre-suf/", "-suf"), Some(("pre", "/")));
-    assert_eq!(TestServer::strip_segment_suffix("-suf", "-suf"), Some(("", "")));
-    assert_eq!(TestServer::strip_segment_suffix("pre", ""), Some(("pre", "")));
-    assert_eq!(TestServer::strip_segment_suffix("", ""), Some(("", "")));
-
-    // No match
-    assert_eq!(TestServer::strip_segment_suffix("random", "-suf"), None);
-    assert_eq!(TestServer::strip_segment_suffix("random/", "-suf"), None);
-    assert_eq!(TestServer::strip_segment_suffix("random/rest/of/path", "-suf"), None);
-
-    // Matches & strips only the last occurence in the segment
-    assert_eq!(TestServer::strip_segment_suffix("pre-suf-suf/rest", "-suf"), Some(("pre-suf", "/rest")));
-  }
 }

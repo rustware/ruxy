@@ -56,14 +56,7 @@ pub fn render_instruction(ctx: &GenContext, kind: &InstructionKind, children: To
         }
       };
 
-      let check_char_len = match char_len {
-        Arity::Exact(len) => quote! { if segment.len() != #len { matched = false; break; } },
-        Arity::Range(0, None) => TokenStream::new(),
-        Arity::Range(min, None) => quote! { if segment.len() < #min { matched = false; break; } },
-        Arity::Range(min, Some(max)) => {
-          quote! { if segment.len() < #min || segment.len() > #max { matched = false; break; } }
-        }
-      };
+      let check_char_len = gen_char_len_check_for_segment(char_len);
 
       quote! {
         let mut rest = path;
@@ -89,14 +82,7 @@ pub fn render_instruction(ctx: &GenContext, kind: &InstructionKind, children: To
       }
     }
     InstructionKind::ConsumeUpToSegmentCount(count, char_len) => {
-      let check_char_len = match char_len {
-        Arity::Exact(len) => quote! { if segment.len() != #len { matched = false; break; } },
-        Arity::Range(0, None) => TokenStream::new(),
-        Arity::Range(min, None) => quote! { if segment.len() < #min { matched = false; break; } },
-        Arity::Range(min, Some(max)) => {
-          quote! { if segment.len() < #min || segment.len() > #max { matched = false; break; } }
-        }
-      };
+      let check_char_len = gen_char_len_check_for_segment(char_len);
 
       quote! {
         let mut rest = path;
@@ -116,14 +102,7 @@ pub fn render_instruction(ctx: &GenContext, kind: &InstructionKind, children: To
       }
     }
     InstructionKind::ConsumeAllSegments(char_len) => {
-      let check_char_len = match char_len {
-        Arity::Exact(len) => quote! { if segment.len() != #len { matched = false; break; } },
-        Arity::Range(0, None) => TokenStream::new(),
-        Arity::Range(min, None) => quote! { if segment.len() < #min { matched = false; break; } },
-        Arity::Range(min, Some(max)) => {
-          quote! { if segment.len() < #min || segment.len() > #max { matched = false; break; } }
-        }
-      };
+      let check_char_len = gen_char_len_check_for_segment(char_len);
 
       quote! {
         let mut rest = path;
@@ -207,4 +186,19 @@ pub fn render_instruction(ctx: &GenContext, kind: &InstructionKind, children: To
 
 fn create_param_ident(param_name: &str) -> Ident {
   Ident::new(&format!("path_param_{param_name}"), Span::mixed_site())
+}
+
+/// Generates a code that checks the length of remaining characters in the segment.
+/// The `segment` variable must be already generated, as well as the `matched` variable,
+/// which will be set to `false` if the segment doesn't match. This can only be placed
+/// inside a loop.
+fn gen_char_len_check_for_segment(char_len: &Arity) -> TokenStream {
+  match char_len {
+    Arity::Exact(len) => quote! { if segment.len() != #len { matched = false; break; } },
+    Arity::Range(0, None) => TokenStream::new(),
+    Arity::Range(min, None) => quote! { if segment.len() < #min { matched = false; break; } },
+    Arity::Range(min, Some(max)) => {
+      quote! { if segment.len() < #min || segment.len() > #max { matched = false; break; } }
+    }
+  }
 }

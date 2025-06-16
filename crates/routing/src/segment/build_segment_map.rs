@@ -156,11 +156,8 @@ pub fn build_segment_map(
     return (HashMap::new(), "".into());
   }
   
-  // TODO: Add rules:
-  //  1. Multiple dynamic segments with range arity at the same level MUST NOT overlap ([2..4], [5..7] is valid, [2..4], [4..7] is invalid)
-  //  2. Multiple dynamic segments with exact arity MUST NOT overlap ([2], [3] is valid, [2], [2] is invalid)
-  //  3. Non-dynamic routes cannot overlap (my/(group)/route, my/route matches to the same URL and is invalid)
-  //  4. Segment with page.rs MUST contain `page.(j|t)sx?`.
+  // TODO: Validations:
+  //  - Segment with page.rs MUST contain `page.(j|t)sx?`.
 
   let effect = match is_root {
     true => SegmentEffect::Group,

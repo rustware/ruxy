@@ -81,7 +81,8 @@ declare const ___RUXY_HTML_PRIMITIVE_ELEMENTS: HtmlPrimitiveElement[];
  * in the array (meaning that we render ALL the primitive elements, otherwise some elements
  * wouldn't run because of conditional rendering).
  * */
-// @ts-ignore
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
 function __ruxyHtmlCreateElement(tagName: string, props: object, ...children: ReactNode[]) {
   // This is the place to pre-render the element and output it for the server to bake it into the binary
   // TODO: Run through all the props. Try to
