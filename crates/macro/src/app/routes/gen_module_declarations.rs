@@ -1,7 +1,8 @@
-use proc_macro2::{TokenStream, Ident, Span};
+use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
-use ::ruxy_routing::{RouteTree, RouteSegment, RouteSegmentFileModule, RequestHandler};
+use ::ruxy_routing::route_tree::RouteTree;
+use ::ruxy_routing::segment::{RequestHandler, RouteSegment, RouteSegmentFileModule};
 
 pub fn gen_module_declarations(route_tree: &RouteTree) -> TokenStream {
   let declarations = route_tree.segments.values().map(gen_module_declarations_for_segment);

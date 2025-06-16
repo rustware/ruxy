@@ -1,7 +1,7 @@
 use proc_macro2::{TokenStream};
 use quote::quote;
 
-use ::ruxy_routing::RouteTree;
+use ::ruxy_routing::route_tree::RouteTree;
 
 use crate::helpers::get_project_dir;
 

@@ -1,7 +1,7 @@
 use crate::instruction::create_instructions::CreateInstructionsContext;
-use crate::instruction::{InstructionKind, MatchInstruction};
+use crate::instruction::{InstructionKind, MatchDirection, MatchInstruction};
 use crate::segment::{Arity, DynamicSequence};
-use crate::sequence::{MatchDirection, RouteSequence};
+use crate::sequence::RouteSequence;
 
 pub fn instruct_dynamic_sequence(ctx: &mut CreateInstructionsContext, sequence: DynamicSequence) {
   let Arity::Exact(seg_count) = sequence.seg_count else {
@@ -26,7 +26,7 @@ pub fn instruct_dynamic_sequence(ctx: &mut CreateInstructionsContext, sequence: 
   }
 
   if let Arity::Range(min, max) = sequence.char_len {
-    let (sequences, char_offset) = find_segment_boundary(ctx);
+    let (sequences, char_offset) = find_view_boundary(ctx);
 
     let kind = InstructionKind::ConsumeIntoView(direction, char_offset);
     ctx.instructions.push(MatchInstruction { kind, ..Default::default() });
@@ -45,13 +45,13 @@ pub fn instruct_dynamic_sequence(ctx: &mut CreateInstructionsContext, sequence: 
           ..
         }) => {
           let direction = if ctx.path_rtl { MatchDirection::Ltr } else { MatchDirection::Rtl };
-          
+
           let kind = InstructionKind::CaptureExactCharsInView(param_name, char_count, direction);
           ctx.instructions.push(MatchInstruction { kind, ..Default::default() });
 
           let kind = InstructionKind::ConsumeExactCharsInView(char_count, direction);
           ctx.instructions.push(MatchInstruction { kind, ..Default::default() });
-        },
+        }
         _ => unreachable!("Unexpected sequence contained in view"),
       }
     }
@@ -67,19 +67,20 @@ pub fn instruct_dynamic_sequence(ctx: &mut CreateInstructionsContext, sequence: 
 /// Returns:
 /// 1. all sequences in between the current sequence and the boundary sequence
 /// 2. a character offset to exclude from the view on its end (or start if RTL)
-fn find_segment_boundary(ctx: &mut CreateInstructionsContext) -> (Vec<RouteSequence>, usize) {
+fn find_view_boundary(ctx: &mut CreateInstructionsContext) -> (Vec<RouteSequence>, usize) {
   let mut char_count_offset = 0;
 
   let mut finder = |_: _, seq: &RouteSequence| match seq {
     RouteSequence::Slash => true,
     RouteSequence::Dynamic(DynamicSequence {
-      seg_count: Arity::Exact(2..) | Arity::Range(2.., _),
+      seg_count: Arity::Exact(2..),
       char_len: Arity::Exact(char_count),
       ..
     }) => {
       char_count_offset = *char_count;
       true
     }
+    RouteSequence::Dynamic(DynamicSequence { seg_count: Arity::Range(0.., _), .. }) => true,
     _ => false,
   };
 
@@ -88,7 +89,13 @@ fn find_segment_boundary(ctx: &mut CreateInstructionsContext) -> (Vec<RouteSeque
   let found = if ctx.path_rtl { iter.rfind(|(i, seq)| finder(*i, seq)) } else { iter.find(|(i, seq)| finder(*i, seq)) };
 
   let Some((boundary_seq_index, _)) = found else {
-    return (ctx.sequences.drain(..).collect(), 0);
+    let mut slice: Vec<RouteSequence> = ctx.sequences.drain(..).collect();
+
+    if !ctx.path_rtl {
+      slice.reverse();
+    }
+
+    return (slice, 0);
   };
 
   let mut slice: Vec<RouteSequence> = if ctx.path_rtl {
@@ -103,9 +110,3 @@ fn find_segment_boundary(ctx: &mut CreateInstructionsContext) -> (Vec<RouteSeque
 
   (slice, char_count_offset)
 }
-
-// TODO: Document the concept of RangeChar breakers
-// There is a rule. Two RangeChars cannot be in the same route segment,
-// UNLESS there is a RangeChar breaker between them.
-// Valid RangeChar breakers:
-// - [2](n), [2..](n)

@@ -1,8 +1,8 @@
-use ::ruxy_routing::RouteTree;
+use ::ruxy_routing::route_tree::RouteTree;
 
-use crate::app::config::AppConfig;
+use crate::app::config::MacroConfig;
 
 pub(super) struct GenContext<'a> {
-  pub config: &'a AppConfig,
+  pub config: &'a MacroConfig,
   pub routes: &'a RouteTree,
 }

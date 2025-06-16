@@ -1,6 +1,6 @@
 mod generate;
-mod wrappers;
-mod render;
+mod render_trie;
 mod context;
+mod render;
 
 pub use generate::*;

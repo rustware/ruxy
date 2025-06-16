@@ -1,10 +1,12 @@
 use std::collections::VecDeque;
 
+use ::ruxy_config::{APP_CONFIG, TrailingSlashConfig};
+
 use crate::instruction::inflate_instructions::inflate_instructions;
-use crate::instruction::{InstructionKind, MatchInstruction, MatchTarget, TargetKind};
 use crate::instruction::instructors::{instruct_dynamic_sequence, instruct_seg_count_range};
-use crate::segment::{Arity, DynamicSequence, RouteSegment, SegmentMap};
-use crate::sequence::{MatchDirection, RouteSequence, get_route_sequences};
+use crate::instruction::{InstructionKind, MatchDirection, MatchInstruction};
+use crate::segment::{RouteSegment, SegmentMap};
+use crate::sequence::{RouteSequence, get_route_sequences};
 
 pub fn create_instructions(segments: &SegmentMap) -> MatchInstruction {
   let routes = segments.values().filter_map(|s| {
@@ -14,8 +16,8 @@ pub fn create_instructions(segments: &SegmentMap) -> MatchInstruction {
   });
 
   inflate_instructions(routes.collect())
-  
-  // TODO: Create a RadixTrie from MatchInstruction prefixes instead of string prefixes
+
+  // TODO: Create a radix trie from MatchInstruction prefixes instead of string prefixes
 }
 
 pub struct CreateInstructionsContext {
@@ -33,11 +35,35 @@ pub fn create_route_instructions(sequences: Vec<RouteSequence>, segment: &RouteS
     path_rtl: false,
   };
 
+  if ctx.sequences.is_empty() {
+    // Root is special, we handle it separately
+    return create_root_instructions(segment);
+  }
+
   while !ctx.sequences.is_empty() {
     create_route_instructions_loop(&mut ctx);
   }
 
   ctx.instructions
+}
+
+fn create_root_instructions(segment: &RouteSegment) -> Vec<MatchInstruction> {
+  let mut instructions = Vec::new();
+  
+  if matches!(APP_CONFIG.trailing_slash, TrailingSlashConfig::RequireAbsent | TrailingSlashConfig::RedirectToRemoved) {
+    let kind = InstructionKind::ConsumeLiteral(String::from("/"), MatchDirection::Ltr);
+    instructions.push(MatchInstruction { kind, ..Default::default() });
+  }
+  
+  instructions.extend([
+    MatchInstruction { kind: InstructionKind::CheckEndOfPath, ..Default::default() },
+    MatchInstruction {
+      kind: InstructionKind::InvokeRouteHandler(segment.identifier.clone()),
+      ..Default::default()
+    },
+  ]);
+  
+  instructions
 }
 
 fn create_route_instructions_loop(ctx: &mut CreateInstructionsContext) {
@@ -60,7 +86,7 @@ fn create_route_instructions_loop(ctx: &mut CreateInstructionsContext) {
     true => ctx.sequences.pop_back().unwrap(),
     false => ctx.sequences.pop_front().unwrap(),
   };
-  
+
   match sequence {
     RouteSequence::Slash => {
       let direction = if ctx.path_rtl { MatchDirection::Rtl } else { MatchDirection::Ltr };
@@ -85,7 +111,7 @@ fn create_route_instructions_loop(ctx: &mut CreateInstructionsContext) {
   // Handle end of route
   if ctx.sequences.is_empty() && !ctx.path_rtl {
     ctx.instructions.extend([
-      MatchInstruction { kind: InstructionKind::CheckEndOfUrl, ..Default::default() },
+      MatchInstruction { kind: InstructionKind::CheckEndOfPath, ..Default::default() },
       MatchInstruction {
         kind: InstructionKind::InvokeRouteHandler(ctx.route_segment_id.clone()),
         ..Default::default()

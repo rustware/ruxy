@@ -1,12 +1,10 @@
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use ::ruxy_routing::TrailingSlashConfig;
+use ruxy_config::{APP_CONFIG, TrailingSlashConfig};
 
-use crate::app::config::AppConfig;
-
-pub fn wrap_router(config: &AppConfig, router: TokenStream) -> TokenStream {
-  match &config.trailing_slash {
+pub fn wrap_router(router: TokenStream) -> TokenStream {
+  match APP_CONFIG.trailing_slash {
     TrailingSlashConfig::RequireAbsent => {
       // No wrapper for RequireAbsent, the "end of path" conditions only include
       // `path.is_empty()`, so the trailing slash will never match unless explicitly
@@ -15,21 +13,16 @@ pub fn wrap_router(config: &AppConfig, router: TokenStream) -> TokenStream {
     }
     TrailingSlashConfig::RedirectToRemoved => {
       quote! {
-        // TODO: Maybe do just .strip_prefix('/') here to allow matching
-        //  leaf empty segments or leaf `{_(0..)}` segments?
-        //  Users could add one extra slash at the end then (leaf//).
-        if let Some(path) = path.trim_end_matches('/') {
-          if !path.is_empty() {
-            return Self::redirect_to_path(&request, path);
-          }
+        if path.ends_with('/') && path.len() > 1 {
+          return Self::redirect_to_path(&request, path.trim_end_matches('/'));
         }
-        
+  
         // RedirectToRemoved has the same behavior as RequireAbsent after
         // the user is redirected from the present slash to the absent slash.
         // No wrapping needed after the redirect.
         #router
       }
-    },
+    }
     TrailingSlashConfig::RequirePresent => {
       quote! { if let Some(path) = path.strip_suffix('/') { #router } }
     }
@@ -38,7 +31,7 @@ pub fn wrap_router(config: &AppConfig, router: TokenStream) -> TokenStream {
         let Some(path) = path.strip_suffix('/') else {
           return Self::redirect_to_added_slash(&request, path);
         }
-        
+  
         #router
       }
     }

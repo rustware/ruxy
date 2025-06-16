@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::RouteTree;
+use crate::route_tree::RouteTree;
 
 #[test]
 fn test_build_routes() {

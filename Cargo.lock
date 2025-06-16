@@ -698,11 +698,16 @@ dependencies = [
  "clap",
  "inquire",
  "ruxy_compiler",
+ "ruxy_config",
  "ruxy_routing",
 ]
 
 [[package]]
 name = "ruxy_compiler"
+version = "0.1.0"
+
+[[package]]
+name = "ruxy_config"
 version = "0.1.0"
 
 [[package]]
@@ -712,6 +717,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rand",
+ "ruxy_config",
  "ruxy_routing",
  "ruxy_util",
 ]
@@ -722,6 +728,7 @@ version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
+ "ruxy_config",
  "ruxy_util",
 ]
 

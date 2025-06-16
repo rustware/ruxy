@@ -1,5 +1,4 @@
 use crate::segment::Arity;
-use crate::sequence::MatchDirection;
 
 pub mod create_instructions;
 mod inflate_instructions;
@@ -7,8 +6,8 @@ mod instructors;
 
 #[derive(Debug)]
 pub struct MatchInstruction {
-  kind: InstructionKind,
-  next: Vec<MatchInstruction>,
+  pub kind: InstructionKind,
+  pub next: Vec<MatchInstruction>,
 }
 
 impl Default for MatchInstruction {
@@ -41,9 +40,11 @@ pub enum InstructionKind {
   ConsumeSegmentCount(usize, Arity, MatchDirection),
   /// The .0 is the upper limit of the segments to consume.
   /// The .1 is the character length constraints that must be checked within each segment.
+  /// Direction is always LTR, and even the first segment is preceded by slash.
   ConsumeUpToSegmentCount(usize, Arity),
   /// Consume all remaining segments from the path.
   /// The .0 is the character length constraints that must be checked within each segment.
+  /// Direction is always LTR, and even the first segment is preceded by slash.
   ConsumeAllSegments(Arity),
   /// Check if the path is empty or if the first character is a slash (if so, consume it).
   /// ```rs
@@ -66,14 +67,12 @@ pub enum InstructionKind {
   /// Invoke a user-specified matcher.
   /// The .0 is the ID of the Route Segment that contains the matcher.
   InvokeCustomMatcher(String),
-  /// The .0 is the name of the parameter to capture.
-  CaptureParam(String, MatchTarget),
   /// Consume a part of the path, .0 is the literal.
   ConsumeLiteral(String, MatchDirection),
   /// Consume a part of the view, .0 is the literal.
   ConsumeLiteralInView(String, MatchDirection),
-  /// Check if the URL is at the end (beware of special handling of slash in root segment).
-  CheckEndOfUrl,
+  /// Check if the path is at the end.
+  CheckEndOfPath,
   /// Respond with the handler of the provided Segment ID
   InvokeRouteHandler(String),
   /// Respond with the Not Found handler of the provided Segment ID.
@@ -96,4 +95,12 @@ pub enum TargetKind {
   ExactChars(usize),
   RestOfPath,
   RestOfView,
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum MatchDirection {
+  /// Match in left-to-right direction.
+  Ltr,
+  /// Match in right-to-left direction.
+  Rtl,
 }

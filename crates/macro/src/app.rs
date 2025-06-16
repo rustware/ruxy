@@ -1,20 +1,19 @@
-mod config;
 mod errors;
-mod routes;
 mod handler;
+mod routes;
+mod config;
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
-use ::ruxy_routing::RouteTree;
-
-use crate::app::config::parse_app_config;
+use ::ruxy_routing::route_tree::RouteTree;
+use crate::app::config::parse_macro_config;
 use crate::app::errors::render_errors;
 use crate::helpers::get_project_dir;
 
-pub fn ruxy_app(config: impl Into<TokenStream>) -> proc_macro::TokenStream {
-  let config = parse_app_config(config.into());
-
+pub fn ruxy_app(input: impl Into<TokenStream>) -> proc_macro::TokenStream {
+  let config = parse_macro_config(input.into());
+  
   let project_dir = get_project_dir();
   let routes_dir = project_dir.join("src/routes");
   let cache_dir = project_dir.join(".ruxy");

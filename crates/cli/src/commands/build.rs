@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use ::ruxy_routing::RouteTree;
+use ::ruxy_routing::route_tree::RouteTree;
 
 use crate::helpers::resolve_project_directory;
 

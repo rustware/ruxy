@@ -24,11 +24,3 @@ impl RouteSequence {
     matches!(self, RouteSequence::Dynamic(DynamicSequence { char_len: Arity::Range { .. }, .. }))
   }
 }
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub enum MatchDirection {
-  /// Match in left-to-right direction.
-  Ltr,
-  /// Match in right-to-left direction.
-  Rtl,
-}

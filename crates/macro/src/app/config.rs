@@ -1,23 +1,17 @@
 use proc_macro2::TokenStream;
 
-use ::ruxy_routing::TrailingSlashConfig;
+pub struct MacroConfig {}
 
-pub struct AppConfig {
-  pub trailing_slash: TrailingSlashConfig,
-}
-
-impl Default for AppConfig {
+impl Default for MacroConfig {
   fn default() -> Self {
-    Self {
-      trailing_slash: TrailingSlashConfig::RedirectToRemoved,
-    }
+    Self {}
   }
 }
 
-pub fn parse_app_config(_macro_input: TokenStream) -> AppConfig {
-  let config: AppConfig = Default::default();
+pub fn parse_macro_config(_input: TokenStream) -> MacroConfig {
+  let config: MacroConfig = Default::default();
 
-  // TODO: Parse config from macro input AND ruxy.toml and update `config`
+  // TODO: Parse macro input and update `config`
 
   config
 }
