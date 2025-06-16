@@ -73,13 +73,15 @@ fn create_route_instructions_loop(ctx: &mut CreateInstructionsContext) {
 
   // Handle SegCount:Range
   if ctx.sequences[0].is_seg_count_range() {
-    if ctx.sequences.len() > 1 {
+    if ctx.sequences.len() > 1 && !ctx.path_rtl {
       return ctx.path_rtl = true;
     }
 
-    // Match the remaining SegCount Range segment
-    let sequence = ctx.sequences.pop_front().unwrap();
-    return instruct_seg_count_range(ctx, sequence);
+    if ctx.sequences.len() == 1 {
+      // Match the remaining SegCount Range segment
+      let sequence = ctx.sequences.pop_front().unwrap();
+      return instruct_seg_count_range(ctx, sequence);
+    }
   }
 
   let sequence = match ctx.path_rtl {

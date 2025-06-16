@@ -1,23 +1,11 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
+use ::ruxy_routing::instruction::{InstructionKind, MatchDirection};
+use ::ruxy_routing::segment::Arity;
+
 use crate::app::handler::router::context::GenContext;
 use crate::app::handler::router::gen_segment_responder;
-use ::ruxy_routing::instruction::{InstructionKind, MatchDirection};
-use ruxy_routing::segment::Arity;
-
-fn playground() {
-  let path = "";
-
-  let mut path = path;
-  let mut matched = true;
-
-  for _ in 0..5 {
-    let Some(stripped) = path.strip_prefix('/') else {
-      break;
-    };
-  }
-}
 
 pub fn render_instruction(ctx: &GenContext, kind: &InstructionKind, children: TokenStream) -> TokenStream {
   match kind {
@@ -51,7 +39,7 @@ pub fn render_instruction(ctx: &GenContext, kind: &InstructionKind, children: To
     },
     // Special-case the {_[1](n)} (RTL)
     InstructionKind::ConsumeSegmentCount(1, Arity::Exact(char_count), MatchDirection::Rtl) => quote! {
-      if let Some((_, path)) = path.len().checked_sub(#char_count).and_then(|i| path.split_at_checked(i)) { #children }
+      if let Some((path, _)) = path.len().checked_sub(#char_count).and_then(|i| path.split_at_checked(i)) { #children }
     },
     InstructionKind::ConsumeSegmentCount(count, char_len, direction) => {
       let strip_method = match direction {
