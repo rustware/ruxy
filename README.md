@@ -7,34 +7,31 @@
   </a>
   <div align="center">
     <h3>
-      Rust speed. 
-      React simplicity. 
-      Ruxy. 🎉 <br /><br />
+      Bringing React to Rust. 🎉 <br /><br />
     </h3>
   </div>
 </div>
 
-**Ruxy** is an emerging framework that combines the performance of Rust with the flexibility of React.
+**Ruxy** is an emerging framework that combines the benefits of Rust with the flexibility of React.
 
-It enables true server-side rendering without Node.js, V8, or any JavaScript runtime on the server — a fully
+It enables React server-side rendering without Node.js, V8, or any JavaScript runtime on the server — a fully
 native backend serving pre-rendered React apps at incredible speed ([how it works](ARCHITECTURE.md)).
 
-With Ruxy, you build your frontend in [React](https://react.dev) and your backend in [Rust](https://rust-lang.org) — seamlessly integrated for a smooth developer experience.
+With Ruxy, you build your frontend in [React](https://react.dev) and your backend in [Rust](https://rust-lang.org).
 
 ---
 
 ### Performance
 
 Thanks to its novel approach, Ruxy is easily the  [fastest](BENCHMARKS.md) React SSR framework out there.
-Ruxy makes you write your backend code in Rust, and your frontend code in React while preserving SSR.
-
-This bridges the gap between fast backends and development experience on frontend.
+Your pre-rendered React application is served by pure Rust.
 
 How Ruxy optimizes for high performance:
 1. There is no JS runtime on the server to slow your app down.
 2. Ruxy renders your application without a single allocation.
-3. Ruxy is `async` – no expensive thread pre-emptions.
-4. Ruxy's async model doesn't require synchronization ([read more](#Runtime)).
+3. Despite its flexibility, routing doesn't allocate as well.
+4. Ruxy is `async` – no expensive thread pre-emptions.
+5. Ruxy's async model doesn't require synchronization ([read more](#Runtime)).
 
 ---
 

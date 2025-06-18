@@ -37,6 +37,7 @@ pub fn gen_module_declarations_for_segment(segment: &RouteSegment) -> TokenStrea
     let ident = Ident::new(&module.name, Span::mixed_site());
 
     quote! {
+      #[doc(hidden)]
       #[path = #path]
       mod #ident;
     }

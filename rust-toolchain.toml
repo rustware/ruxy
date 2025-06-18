@@ -1,2 +1,3 @@
 [toolchain]
-channel = "stable"
+# TODO: Go back to stable when 1.88 lands
+channel = "beta"

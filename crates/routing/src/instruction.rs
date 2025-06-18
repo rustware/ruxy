@@ -3,6 +3,7 @@ use crate::segment::Arity;
 pub mod create_instructions;
 mod inflate_instructions;
 mod instructors;
+mod validators;
 
 #[derive(Debug)]
 pub struct MatchInstruction {

@@ -15,7 +15,7 @@ pub fn render_instruction(ctx: &GenContext, kind: &InstructionKind, children: To
       #children
     },
     InstructionKind::ConsumeIntoView(MatchDirection::Ltr, offset) => quote! {
-      if let Some((view, path)) = path.find('/').and_then(|i| i.checked_sub(#offset)).and_then(|i| path.split_at_checked(i)) {
+      if let Some((view, path)) = path.find('/').and_then(|i| i.checked_sub(#offset)).and_then(|i| path.split_at(i)) {
         #children
       };
     },

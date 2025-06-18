@@ -55,7 +55,7 @@ fn extract_idents_for_segment(segment: &RouteSegment, routes: &RouteTree) -> Vec
     });
     
     for param_name in param_names {
-      let dyn_var_ident = format!("path_param_{}", param_name);
+      let dyn_var_ident = format!("path_param_{param_name}");
       let dyn_var_ident = Ident::new(&dyn_var_ident, Span::mixed_site());
 
       v.push(quote! {

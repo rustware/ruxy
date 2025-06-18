@@ -5,6 +5,7 @@ use ::ruxy_config::{APP_CONFIG, TrailingSlashConfig};
 use crate::instruction::inflate_instructions::inflate_instructions;
 use crate::instruction::instructors::{instruct_dynamic_sequence, instruct_seg_count_range};
 use crate::instruction::{InstructionKind, MatchDirection, MatchInstruction};
+use crate::instruction::validators::non_ambiguity::validate_non_ambiguity;
 use crate::segment::{RouteSegment, SegmentMap};
 use crate::sequence::{RouteSequence, get_route_sequences};
 
@@ -17,20 +18,24 @@ pub fn create_instructions(segments: &SegmentMap) -> Result<MatchInstruction, Ve
   let mut routes = vec![];
   let mut errors = vec![];
   
-  for route in route_leaves {
-    match get_route_sequences(segments, route) {
-      Ok(sequences) => routes.push(create_route_instructions(sequences, route)),
+  for handler_segment in route_leaves {
+    match get_route_sequences(segments, handler_segment) {
+      Ok(sequences) => routes.push((sequences, handler_segment)),
       Err(errs) => errors.extend(errs),
     }
+  }
+  
+  if let Err(errs) = validate_non_ambiguity(&routes) {
+    errors.extend(errs);
   }
 
   if !errors.is_empty() {
     return Err(errors);
   }
   
-  // TODO: Validate non-ambiguity between routes
+  let routes = routes.into_iter().map(|(seqs, handler)| create_route_instructions(seqs, handler));
   
-  Ok(inflate_instructions(routes))
+  Ok(inflate_instructions(routes.collect()))
 
   // TODO: Create a radix trie from MatchInstruction prefixes instead of string prefixes
 }

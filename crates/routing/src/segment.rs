@@ -1,4 +1,5 @@
 mod build_segment_map;
+mod create_segment_id;
 mod get_route_segments;
 mod parse_segment;
 
@@ -7,6 +8,7 @@ use std::collections::HashMap;
 use quote::quote;
 
 pub use build_segment_map::*;
+pub use create_segment_id::*;
 pub use get_route_segments::*;
 
 /// Route Segment represents a single directory nested any number of levels deep inside the "routes" directory,

@@ -3,7 +3,7 @@ use std::path::{MAIN_SEPARATOR_STR, Path, PathBuf};
 
 use crate::segment::parse_segment::parse_segment;
 
-use super::{RequestHandler, RouteSegment, RouteSegmentFileModule, SegmentEffect, SegmentIdentifier, SegmentMap};
+use super::{create_segment_id, RequestHandler, RouteSegment, RouteSegmentFileModule, SegmentEffect, SegmentIdentifier, SegmentMap};
 
 /// Please read the documentation for the `RouteSegment` struct to understand what a Route Segment is.
 /// Returns (<all nested children map>, <self identifier>)
@@ -33,8 +33,7 @@ pub fn build_segment_map(
     return (HashMap::new(), "".into());
   };
 
-  // Keep identifier same as relative path for now. This may change in the future.
-  let identifier = rel_path_str;
+  let identifier = &create_segment_id(rel_path);
 
   let Ok(entries) = dir.read_dir() else {
     // Ignore unreadable dirs
@@ -43,14 +42,14 @@ pub fn build_segment_map(
 
   let hex = gen_segment_hex(identifier);
   
-  let module_prefix = format!("ruxy__rseg_mod_{hex}_");
+  let module_prefix = format!("rseg_mod_{hex}_");
 
   let get_module = |name: &str, file: &str| -> RouteSegmentFileModule {
     // Only generate the module prefix once
-    let path = PathBuf::from("./routes").join(rel_path_str).join(file);
+    let path = PathBuf::from("./routes").join(rel_path).join(file);
 
     RouteSegmentFileModule {
-      name: format!("{}{}", module_prefix, name),
+      name: format!("{module_prefix}{name}"),
       // The values are already sanitized, `unwrap` is safe here.
       path: path.to_str().unwrap().to_string(),
     }
@@ -111,7 +110,7 @@ pub fn build_segment_map(
         if var.is_some() {
           let path = match rel_path_str.is_empty() {
             true => MAIN_SEPARATOR_STR,
-            false => &format!("{}{}{}", MAIN_SEPARATOR_STR, rel_path_str, MAIN_SEPARATOR_STR),
+            false => &format!("{MAIN_SEPARATOR_STR}{rel_path_str}{MAIN_SEPARATOR_STR}"),
           };
 
           compile_errors.push(format!(
@@ -202,5 +201,5 @@ fn gen_segment_hex(identifier: &str) -> String {
   //  e.g. sort all segments by identifier ASC and hex-encode its numeric index instead of identifier.
   //  We'll need to think about the implications of this, but it might be the best solution.
   // We pad each byte with a leading zero (`{:02x}`) to preserve unambiguity between bytes.
-  identifier.as_bytes().iter().map(|b| format!("{:02x}", b)).collect()
+  identifier.as_bytes().iter().map(|b| format!("{b:02x}")).collect()
 }
