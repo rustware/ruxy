@@ -63,7 +63,12 @@ pub fn get_route_file() -> RouteFile {
   let Some(file) = span.local_file() else {
     panic!("span.local_file() is None");
   };
-
+  
+  let Ok(cwd) = std::env::current_dir() else {
+    panic!("cannot get current working directory"); 
+  };
+  
+  let file = cwd.join(file);
   let path = file.to_path_buf();
 
   let Ok(rel_path) = file.strip_prefix(routes_dir) else {
