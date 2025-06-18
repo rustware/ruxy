@@ -12,7 +12,7 @@ pub fn ruxy_page(input: impl Into<TokenStream>, _args: impl Into<TokenStream>) -
     panic!("This macro can only be used in a page file – `page.rs`, `error_page.rs`, or `not_found_page.rs`.");
   }
   
-  // TODO: Extract path parameters from `route_fils.segment_id` by parsing the segment recursively
+  // TODO: Extract path parameters from `route_file.segment_id` by parsing the segment recursively
   // TODO: Wrap the decorated function with a wrapper function that can extract stuff from the request
 
   let input = input.into();

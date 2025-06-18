@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::path::Path;
 
 use inquire::CustomUserError;
@@ -12,7 +13,7 @@ pub fn get_project_name(options: &mut CmdInitOptions, directory: &Path) -> Strin
     Some(name) => match validate_project_name(name) {
       Ok(_) => std::mem::take(name),
       Err(err) => {
-        eprintln!("Invalid project name: {}", err);
+        eprintln!("Invalid project name: {err}");
         std::process::exit(1);
       }
     },
@@ -23,12 +24,10 @@ pub fn get_project_name(options: &mut CmdInitOptions, directory: &Path) -> Strin
 fn prompt_name(directory: &Path) -> String {
   let mut input = inquire::Text::new("Enter your project name:").with_validator(ProjectNameValidator);
 
-  if let Some(dir_name) = directory.file_name() {
-    if let Some(dir_name) = dir_name.to_str() {
-      if validate_project_name(dir_name).is_ok() {
-        input = input.with_default(dir_name);
-      }
-    }
+  if let Some(dir_name) = directory.file_name().and_then(OsStr::to_str)
+    && validate_project_name(dir_name).is_ok()
+  {
+    input = input.with_default(dir_name);
   }
 
   match input.prompt() {

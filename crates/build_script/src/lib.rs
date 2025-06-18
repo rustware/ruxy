@@ -26,7 +26,7 @@ fn emit_watch_hints_for_dir(path: &Path) -> String {
       }
 
       if let Some(path) = path.to_str() {
-        println!("cargo::rerun-if-changed={}", path);
+        println!("cargo::rerun-if-changed={path}");
       }
 
       let nested = emit_watch_hints_for_dir(&path);
