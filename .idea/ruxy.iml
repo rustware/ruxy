@@ -13,6 +13,7 @@
       <sourceFolder url="file://$MODULE_DIR$/crates/build_script/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/util/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/crates/config/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/crates/macro_support/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/crates/ruxy/target" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/vvb/target" />

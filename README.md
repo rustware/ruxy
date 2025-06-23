@@ -31,7 +31,7 @@ How Ruxy optimizes for high performance:
 2. Ruxy renders your application without a single allocation.
 3. Despite its flexibility, routing doesn't allocate as well.
 4. Ruxy is `async` – no expensive thread pre-emptions.
-5. Ruxy's async model doesn't require synchronization ([read more](#Runtime)).
+5. Ruxy's async model doesn't require synchronization ([read more](#Thread-per-core)).
 
 ---
 
@@ -72,7 +72,7 @@ async fn page(ctx: Context, name: QueryParam) {
 
 ---
 
-### Runtime
+### Thread-per-core
 
 Ruxy is a **painless-async** framework. What does that mean?
 
@@ -82,20 +82,19 @@ When a request comes in, Ruxy load-balances it internally across threads. Each r
 
 This
 [increasingly](https://maciej.codes/2022-06-09-local-async.html)
-[popular](https://news.ycombinator.com/item?id=29500309)
-[model](https://github.com/DataDog/glommio)
-offers significant advantages:
+[popular](https://emschwartz.me/async-rust-can-be-a-pleasure-to-work-with-without-send-sync-static/)
+model offers significant advantages:
+- **Developer Experience**:
+  - You're freed from `Send + 'static` constraints.
+  - Async Rust feels much closer to writing synchronous Rust.
 - **Performance**:
   - Eliminates synchronization overhead.
   - Improves CPU cache locality.
   - No task migration cost.
-- **Developer Experience**:
-  - You’re freed from `Send + 'static` constraints.
-  - Async Rust feels much closer to writing synchronous Rust.
 
 It’s worth noting that there is some [debate](https://without.boats/blog/thread-per-core/) about the suitability of the thread-per-core model for applications with uneven workload distribution.
 However, this concern typically doesn’t apply to web applications.
-In this context, Ruxy’s thread-per-core model delivers both high performance and a great developer experience.
+In this context, Ruxy's thread-per-core model delivers both a great developer experience, and similar (or possibly even better) performance than work-stealing.
 
 ---
 
@@ -103,12 +102,11 @@ In this context, Ruxy’s thread-per-core model delivers both high performance a
 
 Ruxy is a great fit whether you're using Kubernetes or another containerization platform.
 
-For optimal performance, we slightly recommend using **fewer containers with more cores each**.
-This allows Ruxy's internal thread-based load balancing to shine – reducing the latency and
-overhead of external load balancers and extra network hops.
+As usual, the amount of containers vs. number of CPUs assigned to each container depends on whether
+you want to optimize for throughput or the latency, and balancing these two is higly dependent on your
+specific workload.
 
-That said, there's **no disadvantage to assigning just a single core** to your container.
-Ruxy avoids synchronization overhead entirely, so single-threaded and multi-threaded
+That said, Ruxy avoids synchronization overhead entirely, so single-threaded and multi-threaded
 deployments both perform efficiently, with no penalties either way.
 
 ---

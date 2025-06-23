@@ -1,6 +1,7 @@
+use std::error::Error;
 use std::future::Future;
 use std::net::SocketAddr;
-use bytes::Bytes;
+
 use hyper::service::service_fn;
 use hyper::{Response, http};
 use hyper::http::HeaderValue;
@@ -28,7 +29,7 @@ pub trait Server: Send + 'static {
         Ok(listener) => listener,
         Err(e) => {
           // TODO: Logging
-          eprintln!("[ERR] failed to bind to '{}': {}", addr, e);
+          eprintln!("[ERR] failed to bind to '{addr}': {e}");
           std::process::exit(1);
         }
       };
@@ -44,13 +45,13 @@ pub trait Server: Send + 'static {
               let builder = conn::auto::Builder::new(AsyncExecutor);
 
               if let Err(err) = builder.serve_connection(io, service_fn(Self::serve)).await {
-                println!("[ERR] error serving connection: {:?}", err);
+                println!("[ERR] error serving connection: {err:?}");
               }
             });
           }
           Err(e) => {
             // TODO: Logging, metrics
-            eprintln!("[ERR] couldn't get client: {}", e);
+            eprintln!("[ERR] couldn't get client: {e}");
             continue;
           }
         }
@@ -82,6 +83,7 @@ pub trait Server: Send + 'static {
     location.extend_from_slice(path.as_bytes());
     location.extend_from_slice(b"/");
     
+    // We can just unwrap here because we know the path is valid UTF-8.
     let location = HeaderValue::from_bytes(location.as_slice()).unwrap();
     
     HandlerResult {

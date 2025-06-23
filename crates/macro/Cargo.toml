@@ -12,6 +12,7 @@ ruxy_config = { path = "../config" }
 ruxy_routing = { path = "../routing" }
 ruxy_util = { path = "../util" }
 
+syn = { version = "2.0.104", features = ["full"] }
 quote = "1.0.40"
 proc-macro2 = "1.0.95"
 rand = "0.9.1"

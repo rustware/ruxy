@@ -1,6 +1,8 @@
 mod app;
 mod helpers;
-mod page;
+mod page_loader;
+mod page_generator;
+mod props;
 
 use proc_macro::TokenStream;
 
@@ -31,10 +33,34 @@ pub fn app(input: TokenStream) -> TokenStream {
 /// ```
 /// // #[ruxy::page]
 /// // pub fn page(#[ctx] ctx, #[headers] headers, #[header("Header-Name") header_name]) {
-/// //   use context or headers
+/// //   // use context or headers
 /// // }
 /// ```
 #[proc_macro_attribute]
-pub fn page(input: TokenStream, args: TokenStream) -> TokenStream {
-  page::ruxy_page(input, args)
+pub fn loader(args: TokenStream, input: TokenStream) -> TokenStream {
+  page_loader::page_loader(args, input)
+}
+
+/// Ruxy's `page` attribute is how you let Ruxy know about your page handler function,
+/// and how you tweak the exact behavior of how your page processes incoming requests.
+/// 
+/// Ruxy will help you inject arguments into your function using special attributes,
+/// ensuring you only consume exactly what you need. This way we can prevent expensive
+/// deserialization of those parts of the request that you're not interested in.
+/// 
+/// Example:
+/// ```
+/// // #[ruxy::page]
+/// // pub fn page(#[ctx] ctx, #[headers] headers, #[header("Header-Name") header_name]) {
+/// //   // use context or headers
+/// // }
+/// ```
+#[proc_macro_attribute]
+pub fn generator(args: TokenStream, input: TokenStream) -> TokenStream {
+  page_generator::page_generator(args, input)
+}
+
+#[proc_macro_derive(Props)]
+pub fn derive_props(input: TokenStream) -> TokenStream {
+  props::derive_props(input)
 }

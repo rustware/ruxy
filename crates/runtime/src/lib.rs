@@ -5,9 +5,12 @@ pub mod server;
 
 mod executor;
 mod routing;
+mod redirect;
+
+pub use redirect::redirect;
 
 #[doc(hidden)]
-pub mod macro_internal {
+pub mod __ruxy_macro_internal {
   pub use bytes::Bytes;
   pub use hyper::body::Frame;
 

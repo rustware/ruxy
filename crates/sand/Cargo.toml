@@ -12,7 +12,6 @@ path = "src/app.rs"
 
 [dependencies]
 ruxy = { path = "../ruxy" }
-ruxy_runtime = { path = "../runtime" }
 
 # Testing (remove when done):
 bytes.workspace = true

@@ -5,11 +5,10 @@ mod parse_segment;
 
 use std::collections::HashMap;
 
-use quote::quote;
-
 pub use build_segment_map::*;
 pub use create_segment_id::*;
 pub use get_route_segments::*;
+pub use parse_segment::*;
 
 /// Route Segment represents a single directory nested any number of levels deep inside the "routes" directory,
 /// provided that this directory contains either:
@@ -178,21 +177,6 @@ pub enum SplitMatchMergeType {
   Prepend,
   /// Append the separated value to the rest of the values.
   Append,
-}
-
-impl DynamicSequence {
-  pub fn get_rust_type(&self) -> proc_macro2::TokenStream {
-    match self.seg_count {
-      Arity::Exact(num) => match num {
-        1 => quote! { String },
-        other => quote! { [String; #other] },
-      },
-      Arity::Range(lower, ..) => match lower {
-        0 => quote! { Vec<String> },
-        lower => quote! { ([String; #lower], Vec<String>) },
-      },
-    }
-  }
 }
 
 impl Default for DynamicSequence {

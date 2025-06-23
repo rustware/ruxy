@@ -7,7 +7,7 @@
 //  Build fearlessly. Smoke benchmarks. Have fun. 🤘
 
 ruxy::app! {
-    
+
     partytown: {
         // Experimental support for Partytown.
         // More information: https://ruxy.dev/docs/partytown
