@@ -15,15 +15,17 @@ pub trait Caught {
   /// Returns a mutable reference to the contained error of type `T` if the error matches that type.
   /// Otherwise returns `None`.
   ///
-  /// Mutating the contained value will cause the subsequent calls to `get`, `get_mut` and `take`
-  /// see the mutated value – no clones are made.
+  /// Mutating the contained value will cause the subsequent calls to `get_error`, `get_error_mut`
+  /// and `take_error` see the mutated value – no clones are made.
   fn get_error_mut<T: 'static>(&mut self) -> Option<&mut T>;
 
   /// Returns the contained error of type `T` if the error matches that type.
   /// Otherwise returns `None`.
   ///
-  /// This method consumes the contained error on successful match, so the subsequent calls to `get`,
-  /// `get_mut` and `take` will all return `None` after this method has yeielded `Some`.
+  /// This method consumes the contained error on successful match, so the subsequent calls to `get_error`,
+  /// `get_error_mut` and `take_error` will all return `None` after this method has yeielded `Some`.
+  /// 
+  /// For a non-consuming version, see `get_error` and `get_error_mut`.
   fn take_error<T: 'static>(&mut self) -> Option<T>;
 
   /// Returns some useful information about the origin of this error.

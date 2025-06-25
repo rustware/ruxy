@@ -14,7 +14,6 @@ path = "src/app.rs"
 ruxy = { path = "../ruxy" }
 
 # Testing (remove when done):
-bytes.workspace = true
 hyper = "1.6.0"
 
 [build-dependencies]

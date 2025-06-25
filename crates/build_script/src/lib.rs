@@ -3,8 +3,8 @@ use std::path::Path;
 pub fn main() {
   let serialized = emit_watch_hints_for_dir(Path::new("src/routes"));
   let hashed = short_hash(&serialized);
-  
-  // Updates `<out>/.ruxy/cache/ROUTES` with an updated routes hash
+
+  // Updates `<out>/.ruxy/cache/ROUTES_HASH` with an updated routes hash
   update_routes_hash_file(format!("{hashed:x}"));
 }
 
@@ -20,7 +20,7 @@ fn emit_watch_hints_for_dir(path: &Path) -> String {
         let name = name.to_str().unwrap_or_default();
         file_names.push(name.to_string());
       }
-      
+
       if !path.is_dir() {
         continue;
       }
@@ -36,7 +36,7 @@ fn emit_watch_hints_for_dir(path: &Path) -> String {
 
   let dirname = path.file_name().unwrap_or_default();
   let dirname = dirname.to_str().unwrap_or_default();
-  
+
   format!("{dirname}({})", file_names.join("|"))
 }
 
@@ -47,9 +47,9 @@ fn update_routes_hash_file(hash: String) {
   std::fs::write(routes_hash_file_path, hash).unwrap();
 }
 
-use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
 use ruxy_util::fs::get_cache_dir;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
 fn short_hash(input: &str) -> u64 {
   let mut hasher = DefaultHasher::new();

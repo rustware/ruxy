@@ -21,7 +21,7 @@ pub fn ruxy_app(input: impl Into<TokenStream>) -> proc_macro::TokenStream {
   
   let routes = RouteTree::new(&routes_dir);
 
-  let module_declarations = routes::gen_module_declarations(&routes);
+  let module_declarations = routes::gen_route_modules(&routes);
   let handler_function = handler::gen_handler_function(&config, &routes);
   
   let errors = routes.get_compile_errors();
@@ -33,6 +33,8 @@ pub fn ruxy_app(input: impl Into<TokenStream>) -> proc_macro::TokenStream {
   let app_mod_ident = Ident::new("app", Span::mixed_site());
 
   let output = quote! {
+    // TODO: Decide whether we want to make `app` module visible
+    // #[doc(hidden)]
     #[path = ""]
     mod #app_mod_ident {
       #module_declarations

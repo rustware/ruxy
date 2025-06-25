@@ -761,7 +761,6 @@ dependencies = [
 name = "sand"
 version = "0.1.0"
 dependencies = [
- "bytes",
  "hyper",
  "ruxy",
  "ruxy_build_script",

@@ -10,7 +10,7 @@ use crate::hex::hex_to_decimal;
 ///
 /// Derived from the implementation of the `urlencoding` crate:
 /// https://crates.io/crates/urlencoding
-pub fn decode(data: &str) -> Result<Cow<str>, FromUtf8Error> {
+pub fn decode(data: &str) -> Result<Cow<'_, str>, FromUtf8Error> {
   match decode_binary(data.as_bytes()) {
     Cow::Borrowed(_) => Ok(Cow::Borrowed(data)),
     Cow::Owned(s) => Ok(Cow::Owned(String::from_utf8(s)?)),
@@ -18,7 +18,7 @@ pub fn decode(data: &str) -> Result<Cow<str>, FromUtf8Error> {
 }
 
 /// Decode dollar-encoded string as binary data, in any encoding.
-pub fn decode_binary(data: &[u8]) -> Cow<[u8]> {
+pub fn decode_binary(data: &[u8]) -> Cow<'_, [u8]> {
   let offset = data.iter().take_while(|&&c| c != b'$').count();
 
   if offset >= data.len() {
