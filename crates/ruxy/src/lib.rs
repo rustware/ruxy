@@ -4,7 +4,7 @@ pub use ruxy_runtime::request::Request;
 pub use ruxy_runtime::request::cookies::Cookies;
 pub use ruxy_runtime::request::headers::Headers;
 
-pub use ruxy_runtime::page::{GeneratorOutput, LoaderOutput, LoaderResult, Props};
+pub use ruxy_runtime::page::{GeneratorOutput, LoaderOutput, Props};
 pub use ruxy_runtime::redirect;
 
 pub use ruxy_runtime::__ruxy_macro_internal;

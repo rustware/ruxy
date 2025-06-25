@@ -19,6 +19,7 @@ pub fn page_loader(_args: proc_macro::TokenStream, func: proc_macro::TokenStream
   let path_params_ident = Ident::new("__ruxy_path_params", Span::mixed_site());
 
   let ruxy_fn_ident = Ident::new("__ruxy_page", Span::mixed_site());
+  let ruxy_err_ident = Ident::new("__RuxyLoaderError", Span::mixed_site());
 
   let return_type =
     quote! { ()/*::std::result::Result<::ruxy::__ruxy_macro_internal::Response, ::std::error::Error>*/ };
@@ -52,6 +53,15 @@ pub fn page_loader(_args: proc_macro::TokenStream, func: proc_macro::TokenStream
     pub(in crate::app) async fn #ruxy_fn_ident(#path_params_ident: #path_params_type) -> #return_type {
       let user_fn_result = #user_fn_call;
     }
+    
+    #[doc(hidden)]
+    macro_rules! __ruxy_page_gendata_modulehex1 {
+      // TODO: Put real error name here
+      ("error_name") => { MyErrorA };
+    }
+    
+    // TODO: Extract real error type here (enforce absolute or canonical path)
+    pub(in crate::app) type #ruxy_err_ident = ();
 
     #errors
   };
