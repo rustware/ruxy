@@ -28,8 +28,8 @@ Your pre-rendered React application is served by pure Rust.
 
 How Ruxy optimizes for high performance:
 1. There is no JS runtime on the server to slow your app down.
-2. Ruxy renders your application without a single allocation.
-3. Despite its flexibility, routing doesn't allocate as well.
+2. Ruxy renders your application from pre-rendered static chunks.
+3. Despite its flexibility, routing doesn't allocate.
 4. Ruxy is `async` – no expensive thread pre-emptions.
 5. Ruxy's async model doesn't require synchronization ([read more](#Thread-per-core)).
 
@@ -41,32 +41,42 @@ Ruxy is just getting started — under active development and open to contributi
 
 ---
 
-### Server-side rendering, reimagined.
+### Server-side rendering made easy
 
-#### Client
+#### Client – `page.tsx`:
 
 ```tsx
-import { useQuery, useServerValues } from '@ruxyjs/server';
+import { useQuery } from 'ruxy/hooks';
+import { usePageProps } from './+props';
 
 export default function Homepage() {
-  const { name } = useQuery();
-  const { luckyNumber } = useServerValues();
+  const query = useQuery();
+  const name = query.get('name') ?? 'stranger';
+
+  const { luckyNumber } = usePageProps(); // fully typed!
 
   return (
     <>
-      <h1>Hello, {query.name}!</h1>
-      <p>Your lucky number is {luckyNumber}</p>
+      <h1>Hello, {name}!</h1>
+      <p>Your lucky number is {luckyNumber}.</p>
     </>
   );
 }
 ```
 
-#### Server
+#### Server – `page.rs`:
 
 ```rust
-#[ruxy::page]
-async fn page(ctx: Context, name: QueryParam) {
-  ruxy::value!("luckyNumber", 42);
+use ruxy::{loader, Props};
+
+#[derive(Props)]
+struct Props {
+  lucky_number: u8,
+}
+
+#[loader]
+async fn loader() -> Props {
+  Props { lucky_number: 42 }
 }
 ```
 

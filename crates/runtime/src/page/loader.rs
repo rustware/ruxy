@@ -1,38 +1,37 @@
-mod error;
-mod loader_return;
 mod output;
-
-pub use output::LoaderOutput;
+mod internal;
 
 use crate::page::Props;
 use crate::redirect;
 use crate::redirect::Redirect;
 
-/// Anything that implements this trait can be returned from a loader.
-pub trait Loader: Into<Result<LoaderOutput<Self::Props>, Self::Error>> {
-  type Props: Props;
-  type Error;
+use super::error::caught::{Caught, ThrownBy, ThrownByLoaderKind};
+use super::error::downcastable::Downcastable;
+
+pub use output::LoaderOutput;
+
+/// Anything that implements this trait can be returned from a loader
+pub trait Loader: internal::RuxyLoader + Sized {
+  // This is mainly called from macro expansions.
+  // We don't guarantee the API stability of this method.
+  #[doc(hidden)]
+  fn __internal_into_result(self) -> Result<LoaderOutput<Self::Props>, Self::Error> {
+    internal::RuxyLoader::into_loader_result(self)
+  }
 }
 
-/// Fully specified loader result type.
-/// Everything else that can be returned from the loaders must be convertable to this type.
-type LoaderResult<P, E> = Result<LoaderOutput<P>, E>;
+impl<T: internal::RuxyLoader> Loader for T {}
 
-impl<P: Props, E> From<LoaderOutput<P>> for LoaderResult<P, E> {
+impl<P: Props, E> From<LoaderOutput<P>> for Result<LoaderOutput<P>, E> {
   fn from(value: LoaderOutput<P>) -> Self {
     Ok(value)
   }
 }
 
-impl<P: Props, E> From<Redirect> for LoaderResult<P, E> {
+impl<P: Props, E> From<Redirect> for Result<LoaderOutput<P>, E> {
   fn from(value: Redirect) -> Self {
     Ok(value.into())
   }
-}
-
-impl Loader for Redirect {
-  type Props = ();
-  type Error = ();
 }
 
 async fn loader() -> impl Loader {
@@ -40,7 +39,7 @@ async fn loader() -> impl Loader {
 }
 
 async fn macrogenerated() {
-  let result: Result<_, _> = loader().await.into();
+  let result: Result<_, _> = loader().await.__internal_into_result();
 
   match result {
     Err(err) => {
@@ -54,39 +53,17 @@ async fn macrogenerated() {
 }
 
 async fn handle_error_macrogenerated<E: 'static>(error: E) -> () {
-  // TODO: Check whether this the type_name is actually useful, otherwise try `type_name_of_val(error)`
-  let downcastable = DowncastableErr { error: &mut Some(error), type_name: std::any::type_name::<E>() };
+  let thrown_by = ThrownBy { route_id: "routes/project/{project_id}/(proj)", loader_kind: ThrownByLoaderKind::Page };
+
+  // TODO: Check whether this type_name is actually useful, otherwise try `type_name_of_val(error)`
+  let downcastable = Downcastable {
+    error: &mut Some(error),
+    thrown_by,
+    type_name: std::any::type_name::<E>(),
+    type_id: std::any::TypeId::of::<E>(),
+  };
+  
   let output = error_loader(downcastable).await;
-}
-
-trait Caught {
-  fn get<T: 'static>(&self) -> Option<&T>;
-  fn get_mut<T: 'static>(&mut self) -> Option<&mut T>;
-  fn take<T: 'static>(&mut self) -> Option<T>;
-  fn type_name(&self) -> &'static str;
-}
-
-struct DowncastableErr<'err> {
-  error: &'err mut dyn ::std::any::Any,
-  type_name: &'static str,
-}
-
-impl<'err> Caught for DowncastableErr<'err> {
-  fn get<T: 'static>(&self) -> Option<&T> {
-    self.error.downcast_ref::<Option<T>>()?.as_ref()
-  }
-
-  fn get_mut<T: 'static>(&mut self) -> Option<&mut T> {
-    self.error.downcast_mut::<Option<T>>()?.as_mut()
-  }
-
-  fn take<T: 'static>(&mut self) -> Option<T> {
-    self.error.downcast_mut::<Option<T>>().and_then(std::mem::take)
-  }
-
-  fn type_name(&self) -> &'static str {
-    self.type_name
-  }
 }
 
 struct MyErr {
@@ -98,30 +75,30 @@ struct MyOtherErr {
 }
 
 async fn error_loader(mut error: impl Caught) -> impl Loader {
-  if let Some(err) = error.get::<MyErr>() {
+  if let Some(err) = error.get_error::<MyErr>() {
     println!("{}", err.my_attr);
   }
 
-  if let Some(err) = error.get_mut::<MyErr>() {
+  if let Some(err) = error.get_error_mut::<MyErr>() {
     err.my_attr.push('!');
     println!("{}", err.my_attr);
   }
 
-  if let Some(mut err) = error.take::<MyErr>() {
+  if let Some(mut err) = error.take_error::<MyErr>() {
     err.my_attr = "".to_string();
     println!("{}", err.my_attr);
   }
 
-  if let Some(MyOtherErr { my_other_attr }) = error.get() {
+  if let Some(MyOtherErr { my_other_attr }) = error.get_error() {
     println!("{my_other_attr}");
   }
 
-  if let Some(MyOtherErr { my_other_attr }) = error.get_mut() {
+  if let Some(MyOtherErr { my_other_attr }) = error.get_error_mut() {
     my_other_attr.push('!');
     println!("{my_other_attr}");
   }
 
-  if let Some(MyOtherErr { mut my_other_attr }) = error.take() {
+  if let Some(MyOtherErr { mut my_other_attr }) = error.take_error() {
     my_other_attr.push('!');
     println!("{my_other_attr}");
   }

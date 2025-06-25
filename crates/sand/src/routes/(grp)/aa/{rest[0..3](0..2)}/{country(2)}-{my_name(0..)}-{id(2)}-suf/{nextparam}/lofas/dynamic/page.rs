@@ -1,5 +1,3 @@
-use std::sync::OnceLock;
-
 #[derive(ruxy::Props)]
 pub struct Props {
   some_prop: String,
