@@ -1,0 +1,10 @@
+[package]
+name = "ruxy_build"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+ruxy_util = { path = "../util" }
+
+[lints]
+workspace = true

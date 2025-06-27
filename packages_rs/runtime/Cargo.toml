@@ -1,0 +1,11 @@
+[package]
+name = "ruxy_runtime"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = "1.45.1"
+hyper = "1.6.0"
+
+[lints]
+workspace = true

@@ -1,7 +1,7 @@
 {
   "name": "ruxy",
-  "version": "0.0.1",
-  "description": "Rust speed. React simplicity. Ruxy.",
+  "version": "0.1.0",
+  "description": "Web framework for Rust and React",
   "author": "Rustware",
   "license": "MIT",
   "devDependencies": {

@@ -2,21 +2,22 @@
 <module type="EMPTY_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/crates/ruxy/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/vvb/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/sand/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/cli/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/compiler/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/macro/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/routing/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/runtime/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/build_script/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/util/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/config/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/crates/macro_support/src" isTestSource="false" />
-      <excludeFolder url="file://$MODULE_DIR$/crates/ruxy/target" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/build_script/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/cli/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/compiler/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/config/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/macro/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/macro_support/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/routing/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/runtime/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/ruxy/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/sand/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/server/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/util/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/vvb/target" />
+      <excludeFolder url="file://$MODULE_DIR$/packages_rs/ruxy/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

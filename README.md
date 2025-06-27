@@ -1,8 +1,8 @@
 <div align="center">
   <a href="https://ruxy.dev">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="assets/logo/light/ruxy.svg">
-      <img alt="Next.js logo" src="assets/logo/dark/ruxy.svg" height="64">
+      <source media="(prefers-color-scheme: dark)" srcset="assets/logo_light/ruxy.svg">
+      <img alt="Next.js logo" src="assets/logo_dark/ruxy.svg" height="64">
     </picture>
   </a>
   <div align="center">
@@ -46,7 +46,7 @@ Ruxy is just getting started — under active development and open to contributi
 #### Client – `page.tsx`:
 
 ```tsx
-import { useQuery } from 'ruxy/hooks';
+import { useQuery } from 'ruxyjs/hooks';
 import { usePageProps } from './+props';
 
 export default function Homepage() {
@@ -67,14 +67,13 @@ export default function Homepage() {
 #### Server – `page.rs`:
 
 ```rust
-use ruxy::{loader, Props};
+use ruxy::{Props};
 
 #[derive(Props)]
 struct Props {
   lucky_number: u8,
 }
 
-#[loader]
 async fn loader() -> Props {
   Props { lucky_number: 42 }
 }
@@ -113,11 +112,11 @@ In this context, Ruxy's thread-per-core model delivers both a great developer ex
 Ruxy is a great fit whether you're using Kubernetes or another containerization platform.
 
 As usual, the amount of containers vs. number of CPUs assigned to each container depends on whether
-you want to optimize for throughput or the latency, and balancing these two is higly dependent on your
+you want to optimize for throughput or the latency, and balancing these two is highly dependent on your
 specific workload.
 
-That said, Ruxy avoids synchronization overhead entirely, so single-threaded and multi-threaded
-deployments both perform efficiently, with no penalties either way.
+Beyond the initial socket assignment, Ruxy avoids synchronization overhead entirely, so single-threaded
+and multi-threaded deployments both perform efficiently, with no penalties either way.
 
 ---
 
