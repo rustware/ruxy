@@ -15,6 +15,7 @@
       <sourceFolder url="file://$MODULE_DIR$/packages_rs/sand/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages_rs/server/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages_rs/util/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/shared/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/vvb/target" />
       <excludeFolder url="file://$MODULE_DIR$/packages_rs/ruxy/target" />

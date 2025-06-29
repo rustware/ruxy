@@ -4,8 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tokio = "1.45.1"
-hyper = "1.6.0"
+tokio.workspace = true
+hyper.workspace = true
+flume = "0.11.1"
 
 [lints]
 workspace = true

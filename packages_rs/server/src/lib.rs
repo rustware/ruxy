@@ -6,7 +6,6 @@ pub mod server;
 mod routing;
 mod redirect;
 mod not_found;
-mod threads;
 
 pub use redirect::redirect;
 
