@@ -1,17 +1,24 @@
 use proc_macro2::TokenStream;
+use quote::quote;
 
-pub struct MacroConfig {}
+use ::ruxy_util::fs::get_project_dir;
 
-impl Default for MacroConfig {
-  fn default() -> Self {
-    Self {}
+pub fn gen_config_module() -> TokenStream {
+  let config_file = get_project_dir();
+  let config_file = config_file.join("app/config.rs");
+  
+  if !config_file.is_file() {
+    return quote! {
+      mod config {
+        pub fn config() -> ::ruxy::AppConfig {
+          ::ruxy::AppConfig::default()
+        }
+      }
+    };
   }
-}
-
-pub fn parse_macro_config(_input: TokenStream) -> MacroConfig {
-  let config: MacroConfig = Default::default();
-
-  // TODO: Parse macro input and update `config`
-
-  config
+  
+  quote! {
+    #[path = "../app/config.rs"]
+    mod config;
+  }
 }

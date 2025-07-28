@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 ruxy_util = { path = "../util" }
+ruxy_config = { path = "../config" }
 ruxy_runtime = { path = "../runtime" }
 
 tokio.workspace = true

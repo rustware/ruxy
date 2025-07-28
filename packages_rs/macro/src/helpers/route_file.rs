@@ -58,7 +58,7 @@ impl RouteFileType {
 
 pub fn get_route_file() -> RouteFile {
   let project_dir = get_project_dir();
-  let routes_dir = project_dir.join("src/routes");
+  let routes_dir = project_dir.join("app/routes");
   let span = proc_macro::Span::call_site();
 
   let Some(file) = span.local_file() else {
@@ -71,7 +71,7 @@ pub fn get_route_file() -> RouteFile {
 
   let file = cwd.join(file);
   let path = file.to_path_buf();
-
+  
   let Ok(rel_path) = file.strip_prefix(routes_dir) else {
     panic!(
       "called outside of routes directory.\n\

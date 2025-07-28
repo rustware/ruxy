@@ -1,29 +1,37 @@
 mod config;
 mod errors;
 mod handler;
+mod input;
+mod main;
 mod routes;
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
+use ::ruxy_config::register_app_config;
 use ::ruxy_routing::route_tree::RouteTree;
 use ::ruxy_util::fs::get_project_dir;
 
-use crate::app::config::parse_macro_config;
-use crate::app::errors::render_errors;
 use crate::helpers::render_routes_watch;
 
-pub fn ruxy_app(input: impl Into<TokenStream>) -> proc_macro::TokenStream {
-  let config = parse_macro_config(input.into());
+use errors::render_errors;
+
+pub fn ruxy_app(input: TokenStream) -> Result<TokenStream, TokenStream> {
+  let input = input.try_into()?;
+
+  register_app_config(super::config::revive_config());
 
   let project_dir = get_project_dir();
-  let routes_dir = project_dir.join("src/routes");
-  
+  let routes_dir = project_dir.join("app/routes");
+
   let routes = RouteTree::new(&routes_dir);
 
-  let module_declarations = routes::gen_route_modules(&routes);
-  let handler_function = handler::gen_handler_function(&config, &routes);
-  
+  let route_modules = routes::gen_route_modules(&routes);
+  let config_module = config::gen_config_module();
+
+  let handler_function = handler::gen_handler_function(&input, &routes);
+  let main_function = main::gen_main_function();
+
   let errors = routes.get_compile_errors();
   let errors = render_errors(errors);
 
@@ -33,19 +41,21 @@ pub fn ruxy_app(input: impl Into<TokenStream>) -> proc_macro::TokenStream {
   let app_mod_ident = Ident::new("app", Span::mixed_site());
 
   let output = quote! {
-    // TODO: Decide whether we want to make `app` module visible
-    // #[doc(hidden)]
     #[path = ""]
     mod #app_mod_ident {
-      #module_declarations
+      #config_module
+      #route_modules
 
       use ::ruxy::__ruxy_macro_internal as internal;
 
       pub(super) fn #main_fn_ident() {
+        internal::register_app_config(config::config());
+        
         struct App;
 
         impl internal::Server for App {
           #handler_function
+          #main_function
         };
 
         <App as internal::Server>::start();
@@ -63,5 +73,5 @@ pub fn ruxy_app(input: impl Into<TokenStream>) -> proc_macro::TokenStream {
     #errors
   };
 
-  output.into()
+  Ok(output)
 }

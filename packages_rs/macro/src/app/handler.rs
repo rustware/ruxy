@@ -6,9 +6,9 @@ use quote::quote;
 
 use ::ruxy_routing::route_tree::RouteTree;
 
-use crate::app::config::MacroConfig;
+use crate::app::input::AppMacroInput;
 
-pub fn gen_handler_function(config: &MacroConfig, routes: &RouteTree) -> TokenStream {
+pub fn gen_handler_function(config: &AppMacroInput, routes: &RouteTree) -> TokenStream {
   let router = router::generate(config, routes);
   let router = trailing_slash::wrap_router(router);
 

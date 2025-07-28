@@ -12,13 +12,15 @@
       <sourceFolder url="file://$MODULE_DIR$/packages_rs/routing/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages_rs/runtime/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages_rs/ruxy/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/packages_rs/sand/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages_rs/server/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages_rs/util/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages_rs/shared/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/mytest/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages_rs/sand/app" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/vvb/target" />
       <excludeFolder url="file://$MODULE_DIR$/packages_rs/ruxy/target" />
+      <excludeFolder url="file://$MODULE_DIR$/packages_rs/mytest/config/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

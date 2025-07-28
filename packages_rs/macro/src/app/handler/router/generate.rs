@@ -7,17 +7,17 @@ use quote::quote;
 use ::ruxy_routing::instruction::MatchInstruction;
 use ::ruxy_routing::route_tree::RouteTree;
 
-use crate::app::config::MacroConfig;
 use crate::app::handler::router::generate::global_404::gen_global_404;
 use crate::app::handler::router::render::render_instruction;
 
 use super::context::GenContext;
 
 pub(super) use responder::gen_segment_responder;
+use crate::app::input::AppMacroInput;
 
-pub fn generate(config: &MacroConfig, routes: &RouteTree) -> TokenStream {
+pub fn generate(config: &AppMacroInput, routes: &RouteTree) -> TokenStream {
   // Create GenContext to pass it to the nested generators
-  let ctx = GenContext { config, routes };
+  let ctx = GenContext { input: config, routes };
 
   // Generate rendered instructions recursively from the root
   let instructions = render_instruction_recursive(&ctx, &routes.root_instruction);

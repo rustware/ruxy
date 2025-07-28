@@ -46,7 +46,7 @@ pub fn build_segment_map(
 
   let get_module = |name: &str, file: &str| -> RouteSegmentFileModule {
     // Only generate the module prefix once
-    let path = PathBuf::from("./routes").join(rel_path).join(file);
+    let path = PathBuf::from("routes").join(rel_path).join(file);
 
     RouteSegmentFileModule {
       name: format!("{module_prefix}{name}"),

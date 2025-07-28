@@ -733,6 +733,7 @@ name = "ruxy"
 version = "0.1.0"
 dependencies = [
  "ruxy_cli",
+ "ruxy_config",
  "ruxy_macro",
  "ruxy_server",
 ]
@@ -762,6 +763,9 @@ version = "0.1.0"
 [[package]]
 name = "ruxy_config"
 version = "0.1.0"
+dependencies = [
+ "tokio",
+]
 
 [[package]]
 name = "ruxy_macro"
@@ -805,6 +809,7 @@ dependencies = [
  "futures-util",
  "hyper",
  "hyper-util",
+ "ruxy_config",
  "ruxy_runtime",
  "ruxy_util",
  "tokio",
@@ -824,7 +829,6 @@ version = "0.1.0"
 dependencies = [
  "hyper",
  "ruxy",
- "ruxy_build",
 ]
 
 [[package]]

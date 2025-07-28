@@ -1,7 +1,7 @@
 use std::path::Path;
 
-pub fn main() {
-  let serialized = emit_watch_hints_for_dir(Path::new("src/routes"));
+pub fn build() {
+  let serialized = emit_watch_hints_for_dir(Path::new("app/routes"));
   let hashed = short_hash(&serialized);
 
   // Updates `<out>/.ruxy/cache/ROUTES_HASH` with an updated routes hash

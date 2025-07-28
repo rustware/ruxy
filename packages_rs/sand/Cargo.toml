@@ -4,11 +4,11 @@ description = "Playground application used for local development of Ruxy"
 version = "0.1.0"
 edition = "2024"
 
-build = "build.rs"
+build = ".ruxy/build.rs"
 
 [[bin]]
 name = "sand"
-path = "src/app.rs"
+path = ".ruxy/app.rs"
 
 [dependencies]
 ruxy = { path = "../ruxy" }
@@ -17,7 +17,7 @@ ruxy = { path = "../ruxy" }
 hyper = "1.6.0"
 
 [build-dependencies]
-ruxy_build = { path = "../build" }
+ruxy = { path = "../ruxy" }
 
 [lints]
 workspace = true

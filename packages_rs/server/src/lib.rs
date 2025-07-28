@@ -6,6 +6,7 @@ pub mod server;
 mod routing;
 mod redirect;
 mod not_found;
+mod acceptor;
 
 pub use redirect::redirect;
 
@@ -13,6 +14,8 @@ pub use redirect::redirect;
 pub mod __ruxy_macro_internal {
   pub use bytes::Bytes;
   pub use hyper::body::Frame;
+
+  pub use ::ruxy_config::register_app_config;
 
   pub use super::server::HandlerResult;
   pub use super::server::HyperRequest;

@@ -1,11 +1,11 @@
 use std::collections::VecDeque;
 
-use ::ruxy_config::{APP_CONFIG, TrailingSlashConfig};
+use ::ruxy_config::{TrailingSlashConfig, get_app_config};
 
 use crate::instruction::inflate_instructions::inflate_instructions;
 use crate::instruction::instructors::{instruct_dynamic_sequence, instruct_seg_count_range};
-use crate::instruction::{InstructionKind, MatchDirection, MatchInstruction};
 use crate::instruction::validators::non_ambiguity::validate_non_ambiguity;
+use crate::instruction::{InstructionKind, MatchDirection, MatchInstruction};
 use crate::segment::{RouteSegment, SegmentMap};
 use crate::sequence::{RouteSequence, get_route_sequences};
 
@@ -14,17 +14,17 @@ pub fn create_instructions(segments: &SegmentMap) -> Result<MatchInstruction, Ve
     s.route_handler.as_ref()?;
     Some(s)
   });
-  
+
   let mut routes = vec![];
   let mut errors = vec![];
-  
+
   for handler_segment in route_leaves {
     match get_route_sequences(segments, handler_segment) {
       Ok(sequences) => routes.push((sequences, handler_segment)),
       Err(errs) => errors.extend(errs),
     }
   }
-  
+
   if let Err(errs) = validate_non_ambiguity(&routes) {
     errors.extend(errs);
   }
@@ -32,9 +32,9 @@ pub fn create_instructions(segments: &SegmentMap) -> Result<MatchInstruction, Ve
   if !errors.is_empty() {
     return Err(errors);
   }
-  
+
   let routes = routes.into_iter().map(|(seqs, handler)| create_route_instructions(seqs, handler));
-  
+
   Ok(inflate_instructions(routes.collect()))
 
   // TODO: Create a radix trie from MatchInstruction prefixes instead of string prefixes
@@ -69,20 +69,20 @@ pub fn create_route_instructions(sequences: Vec<RouteSequence>, segment: &RouteS
 
 fn create_root_instructions(segment: &RouteSegment) -> Vec<MatchInstruction> {
   let mut instructions = Vec::new();
-  
-  if matches!(APP_CONFIG.trailing_slash, TrailingSlashConfig::RequireAbsent | TrailingSlashConfig::RedirectToRemoved) {
+
+  if matches!(
+    get_app_config().trailing_slash,
+    TrailingSlashConfig::RequireAbsent | TrailingSlashConfig::RedirectToRemoved
+  ) {
     let kind = InstructionKind::ConsumeLiteral(String::from("/"), MatchDirection::Ltr);
     instructions.push(MatchInstruction { kind, ..Default::default() });
   }
-  
+
   instructions.extend([
     MatchInstruction { kind: InstructionKind::CheckEndOfPath, ..Default::default() },
-    MatchInstruction {
-      kind: InstructionKind::InvokeRouteHandler(segment.identifier.clone()),
-      ..Default::default()
-    },
+    MatchInstruction { kind: InstructionKind::InvokeRouteHandler(segment.identifier.clone()), ..Default::default() },
   ]);
-  
+
   instructions
 }
 

@@ -1,8 +1,10 @@
+use std::path::PathBuf;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
 use ::ruxy_routing::route_tree::RouteTree;
 use ::ruxy_routing::segment::{RequestHandler, RouteSegment, RouteSegmentFileModule};
+use ruxy_util::fs::get_project_dir;
 
 pub fn gen_route_modules(route_tree: &RouteTree) -> TokenStream {
   let declarations = route_tree.segments.values().map(gen_route_modules_for_segment);
@@ -31,8 +33,11 @@ pub fn gen_route_modules_for_segment(segment: &RouteSegment) -> TokenStream {
     modules.push(layout);
   };
 
+  let project_dir = get_project_dir();
+  
   let declarations = modules.iter().map(|module| {
-    let path = &module.path;
+    let path = project_dir.join("app").join(&module.path);
+    let path = path.to_str().unwrap();
 
     let outer_mod_ident = Ident::new(&module.name, Span::mixed_site());
     let inner_mod_ident = Ident::new("inner", Span::mixed_site());

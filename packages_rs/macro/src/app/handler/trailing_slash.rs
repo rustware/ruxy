@@ -1,10 +1,12 @@
+#![allow(unexpected_cfgs)]
+
 use proc_macro2::TokenStream;
 use quote::quote;
 
-use ruxy_config::{APP_CONFIG, TrailingSlashConfig};
+use ruxy_config::{get_app_config, TrailingSlashConfig};
 
 pub fn wrap_router(router: TokenStream) -> TokenStream {
-  match APP_CONFIG.trailing_slash {
+  match get_app_config().trailing_slash {
     TrailingSlashConfig::RequireAbsent => {
       // No wrapper for RequireAbsent, the "end of path" conditions only include
       // `path.is_empty()`, so the trailing slash will never match unless explicitly

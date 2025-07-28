@@ -3,10 +3,10 @@ pub struct AsyncExecutor;
 
 impl<F> hyper::rt::Executor<F> for AsyncExecutor
 where
-  F: Future + 'static,
+  F: Future + Send + 'static,
   F::Output: Send + 'static,
 {
   fn execute(&self, fut: F) {
-    tokio::task::spawn_local(fut);
+    tokio::task::spawn(fut);
   }
 }
