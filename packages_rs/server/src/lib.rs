@@ -10,12 +10,10 @@ mod acceptor;
 
 pub use redirect::redirect;
 
-#[doc(hidden)]
-pub mod __ruxy_macro_internal {
+// Re-exports for usage by "ruxy" crate
+pub mod re {
   pub use bytes::Bytes;
   pub use hyper::body::Frame;
-
-  pub use ::ruxy_config::register_app_config;
 
   pub use super::server::HandlerResult;
   pub use super::server::HyperRequest;

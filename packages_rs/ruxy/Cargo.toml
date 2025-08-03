@@ -11,6 +11,7 @@ license = "MIT"
 
 [dependencies]
 ruxy_cli = { path = "../cli" }
+ruxy_build = { path = "../build" }
 ruxy_macro = { path = "../macro" }
 ruxy_server = { path = "../server" }
 ruxy_config = { path = "../config" }

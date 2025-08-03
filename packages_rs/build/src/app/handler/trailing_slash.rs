@@ -32,7 +32,7 @@ pub fn wrap_router(router: TokenStream) -> TokenStream {
       quote! {
         let Some(path) = path.strip_suffix('/') else {
           return Self::redirect_to_added_slash(path);
-        }
+        };
   
         #router
       }

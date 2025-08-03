@@ -1,58 +1,24 @@
+mod app;
+mod routes_hints;
+
 use std::path::Path;
 
+use ::ruxy_util::fs::{get_project_dir, get_ruxy_out_dir};
+
 pub fn build() {
-  let serialized = emit_watch_hints_for_dir(Path::new("app/routes"));
-  let hashed = short_hash(&serialized);
+  // `get_app_config()` is usable here (initialized by `build!` macro)
 
-  // Updates `<out>/.ruxy/cache/ROUTES_HASH` with an updated routes hash
-  update_routes_hash_file(format!("{hashed:x}"));
-}
+  let destination = get_ruxy_out_dir().join("app.rs");
 
-fn emit_watch_hints_for_dir(path: &Path) -> String {
-  let mut file_names = Vec::new();
+  let app_contents = app::ruxy_app().unwrap_or_else(|e_tokens| e_tokens).to_string();
+  std::fs::write(destination, app_contents).expect("couldn't write <out>/.ruxy/app.rs");
 
-  if let Ok(entries) = std::fs::read_dir(path) {
-    for entry in entries.flatten() {
-      let path = entry.path();
+  let config_path = get_project_dir().join("app").join("config.rs");
 
-      if path.is_file() {
-        let name = path.file_name().unwrap_or_default();
-        let name = name.to_str().unwrap_or_default();
-        file_names.push(name.to_string());
-      }
-
-      if !path.is_dir() {
-        continue;
-      }
-
-      if let Some(path) = path.to_str() {
-        println!("cargo::rerun-if-changed={path}");
-      }
-
-      let nested = emit_watch_hints_for_dir(&path);
-      file_names.push(nested);
-    }
+  if let Some(config_path) = config_path.to_str() {
+    println!("cargo::rerun-if-changed={config_path}");
   }
 
-  let dirname = path.file_name().unwrap_or_default();
-  let dirname = dirname.to_str().unwrap_or_default();
-
-  format!("{dirname}({})", file_names.join("|"))
+  routes_hints::emit_watch_hints_for_dir(Path::new("app/routes"));
 }
 
-fn update_routes_hash_file(hash: String) {
-  let cache_dir = get_cache_dir();
-
-  let routes_hash_file_path = cache_dir.join("ROUTES_HASH");
-  std::fs::write(routes_hash_file_path, hash).unwrap();
-}
-
-use ruxy_util::fs::get_cache_dir;
-use std::collections::hash_map::DefaultHasher;
-use std::hash::{Hash, Hasher};
-
-fn short_hash(input: &str) -> u64 {
-  let mut hasher = DefaultHasher::new();
-  input.hash(&mut hasher);
-  hasher.finish()
-}

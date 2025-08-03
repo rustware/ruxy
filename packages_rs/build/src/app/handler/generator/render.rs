@@ -4,8 +4,8 @@ use quote::quote;
 use ::ruxy_routing::instruction::{InstructionKind, MatchDirection};
 use ::ruxy_routing::segment::Arity;
 
-use crate::app::handler::router::context::GenContext;
-use crate::app::handler::router::gen_segment_responder;
+use crate::app::handler::generator::context::GenContext;
+use crate::app::handler::responder::gen_segment_responder;
 
 pub fn render_instruction(ctx: &GenContext, kind: &InstructionKind, children: TokenStream) -> TokenStream {
   match kind {
@@ -196,6 +196,9 @@ fn gen_char_len_check_for_segment(char_len: &Arity) -> TokenStream {
   match char_len {
     Arity::Exact(len) => quote! { if segment.len() != #len { matched = false; break; } },
     Arity::Range(0, None) => TokenStream::new(),
+    Arity::Range(0, Some(max)) => {
+      quote! { if segment.len() > #max { matched = false; break; } }
+    }
     Arity::Range(min, None) => quote! { if segment.len() < #min { matched = false; break; } },
     Arity::Range(min, Some(max)) => {
       quote! { if segment.len() < #min || segment.len() > #max { matched = false; break; } }

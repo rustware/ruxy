@@ -8,7 +8,7 @@ mod props;
 
 use proc_macro::TokenStream;
 
-/// Ruxy's `app!` generates your application runtime code.
+/// Ruxy's `main!` generates your application runtime code.
 ///
 /// In does multiple fundamental things to make the application work, such as:
 /// 1. Discovering routes by parsing the `routes/` directory,
@@ -17,7 +17,7 @@ use proc_macro::TokenStream;
 /// 1. providing the application entry point,
 /// 1. glueing everything together.
 #[proc_macro]
-pub fn app(input: TokenStream) -> TokenStream {
+pub fn main(input: TokenStream) -> TokenStream {
   app::ruxy_app(input.into()).unwrap_or_else(|e_tokens| e_tokens).into()
 }
 

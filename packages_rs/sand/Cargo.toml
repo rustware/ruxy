@@ -8,7 +8,7 @@ build = ".ruxy/build.rs"
 
 [[bin]]
 name = "sand"
-path = ".ruxy/app.rs"
+path = ".ruxy/main.rs"
 
 [dependencies]
 ruxy = { path = "../ruxy" }

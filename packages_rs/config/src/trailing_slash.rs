@@ -1,4 +1,4 @@
-#[derive(Default)]
+#[derive(Default, Debug, Copy, Clone)]
 pub enum TrailingSlashConfig {
   /// Requires that the trailing slash is present in the request URL.
   ///
@@ -82,11 +82,31 @@ pub enum TrailingSlashConfig {
   RedirectToAdded,
 }
 
-impl TrailingSlashConfig {
-  pub fn get_routing_prefix(&self) -> &'static str {
-    match self {
-      Self::RequireAbsent | Self::RedirectToRemoved => "/",
-      _ => "",
+impl From<u8> for TrailingSlashConfig {
+  fn from(value: u8) -> Self {
+    match value {
+      0 => Self::RequirePresent,
+      1 => Self::RequireAbsent,
+      2 => Self::Ignore,
+      3 => Self::RedirectToRemoved,
+      4 => Self::RedirectToAdded,
+      _ => {
+        // TODO: Logging
+        eprintln!("[WARNING] Invalid trailing slash config value: {value}. Using default.");
+        Self::default()
+      },
     }
+  }
+}
+
+impl From<TrailingSlashConfig> for u8 {
+  fn from(value: TrailingSlashConfig) -> Self {
+    match value {
+      TrailingSlashConfig::RequirePresent => 0,
+      TrailingSlashConfig::RequireAbsent => 1,
+      TrailingSlashConfig::Ignore => 2,
+      TrailingSlashConfig::RedirectToRemoved => 3,
+      TrailingSlashConfig::RedirectToAdded => 4,
+    } 
   }
 }

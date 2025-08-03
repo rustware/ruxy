@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use super::get_out_dir;
 
-pub fn get_ruxy_dir() -> PathBuf {
+pub fn get_ruxy_out_dir() -> PathBuf {
   let ruxy_dir = get_out_dir().join(".ruxy");
 
   std::fs::create_dir(&ruxy_dir).unwrap_or_else(|err| {

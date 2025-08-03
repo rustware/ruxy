@@ -1,0 +1,2 @@
+// KEEP INTACT
+ruxy::main! {}

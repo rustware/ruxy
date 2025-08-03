@@ -13,3 +13,5 @@ new_without_default = "allow"
 tokio = { version = "1.45.1", features = ["default", "rt", "net", "rt-multi-thread", "sync"] }
 hyper = "1.6.0"
 bytes = "1.10.1"
+quote = "1.0.40"
+proc-macro2 = "1.0.95"

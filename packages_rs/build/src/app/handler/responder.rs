@@ -4,9 +4,9 @@ use quote::quote;
 use ::ruxy_routing::route_tree::RouteTree;
 use ::ruxy_routing::segment::{DynamicSequence, RouteSegment, SegmentEffect, TypedSequence};
 
-use crate::app::handler::router::context::GenContext;
+use crate::app::handler::generator::context::GenContext;
 
-pub(in super::super) fn gen_segment_responder(ctx: &GenContext, segment: &RouteSegment) -> TokenStream {
+pub fn gen_segment_responder(ctx: &GenContext, segment: &RouteSegment) -> TokenStream {
   let identifier = &segment.identifier;
 
   let path_params: Vec<TokenStream> = extract_idents_for_segment(segment, ctx.routes);
@@ -53,7 +53,7 @@ fn extract_idents_for_segment(segment: &RouteSegment, routes: &RouteTree) -> Vec
 
       Some(param_name)
     });
-    
+
     for param_name in param_names {
       let dyn_var_ident = format!("path_param_{param_name}");
       let dyn_var_ident = Ident::new(&dyn_var_ident, Span::mixed_site());

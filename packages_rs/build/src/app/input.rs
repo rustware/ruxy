@@ -2,7 +2,7 @@ use proc_macro2::TokenStream;
 
 mod parse;
 
-/// Parsed input of the `main!` macro.
+/// Parsed input of the `app!` macro.
 pub struct AppMacroInput {}
 
 impl TryFrom<TokenStream> for AppMacroInput {

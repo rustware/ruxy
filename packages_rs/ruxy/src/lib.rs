@@ -1,4 +1,4 @@
-pub use ruxy_macro::{Props, app, build, generator, loader};
+pub use ruxy_macro::{Props, main, build, generator, loader};
 
 // Request-related items
 pub use ruxy_server::request::Request;
@@ -14,6 +14,13 @@ pub use ruxy_server::redirect;
 
 // Config-related items
 pub use ruxy_config::AppConfig;
+pub use ruxy_config::TrailingSlashConfig;
+pub use ruxy_config::PartytownConfig;
 
 // Internal (called in macro expansions)
-pub use ruxy_server::__ruxy_macro_internal;
+#[doc(hidden)]
+pub mod __ruxy_macro_internal {
+  pub use ruxy_server::re::*;
+  pub use ruxy_config::register_app_config;
+  pub use ruxy_build::build;
+}
