@@ -1,5 +1,5 @@
 [workspace]
-members = ["packages_rs/*"]
+members = ["packages/core", "packages/macro", "packages/ruxy", "packages/sand"]
 resolver = "2"
 
 [profile.release]

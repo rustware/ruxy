@@ -1,0 +1,18 @@
+[package]
+name = "ruxy_macro"
+version = "0.1.0"
+edition = "2024"
+description = "Ruxy macros"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+ruxy_core = { path = "../core" }
+
+syn = { version = "2.0.104", features = ["full"] }
+quote.workspace = true
+proc-macro2.workspace = true
+
+[lints]
+workspace = true

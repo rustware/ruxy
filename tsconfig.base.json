@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "paths": {
-      "server": ["packages_ts/ruxy/src/server.ts"]
+      "server": ["packages/client/ruxy/src/server.ts"]
     }
   }
 }

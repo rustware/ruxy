@@ -1,9 +1,0 @@
-[package]
-name = "ruxy_runtime"
-version = "0.1.0"
-edition = "2024"
-
-[dependencies]
-tokio.workspace = true
-hyper.workspace = true
-flume = "0.11.1"

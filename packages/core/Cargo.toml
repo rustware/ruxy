@@ -1,0 +1,19 @@
+[package]
+name = "ruxy_core"
+version = "0.1.0"
+edition = "2024"
+
+[lints]
+workspace = true
+
+[dependencies]
+quote.workspace = true
+proc-macro2.workspace = true
+bytes.workspace = true
+hyper.workspace = true
+tokio.workspace = true
+
+clap = { version = "4.5.38", features = ["derive"] }
+hyper-util = { version = "0.1.16", features = ["full"] }
+inquire = { version = "0.7.5" }
+flume = "0.11.1"

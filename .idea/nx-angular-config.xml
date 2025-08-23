@@ -2,8 +2,8 @@
 <project version="4">
   <component name="NxAngularConfigService" workspaceLocation="file://$PROJECT_DIR$/nx.json">
     <projects>
-      <project name="ruxyjs" file="file://$PROJECT_DIR$/packages_ts/ruxy/project.json" />
-      <project name="server" file="file://$PROJECT_DIR$/packages_ts/navigation/project.json" />
+      <project name="ruxyjs" file="file://$PROJECT_DIR$/packages/client/ruxy/project.json" />
+      <project name="server" file="file://$PROJECT_DIR$/packages/client/navigation/project.json" />
     </projects>
   </component>
 </project>

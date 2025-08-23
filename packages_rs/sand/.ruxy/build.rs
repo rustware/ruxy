@@ -1,2 +1,0 @@
-// KEEP INTACT
-ruxy::build! {}
