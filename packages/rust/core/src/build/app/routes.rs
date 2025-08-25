@@ -1,3 +1,3 @@
-mod get_route_modules;
+mod gen_modules;
 
-pub use self::get_route_modules::*;
+pub use self::gen_modules::*;

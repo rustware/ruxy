@@ -12,7 +12,7 @@ pub trait PathParameters {
   /// - `Some(&PathParam)` if a path parameter with the specified name exists,
   ///   regardless of whether it occurs before, after, or as part of the current segment.
   /// - `None` otherwise.
-  fn get(&self, name: &str) -> Option<&PathParam>;
+  fn get(&self, name: &str) -> Option<&PathParam<'_>>;
 
   /// Get the value of a path parameter with the provided name.
   ///
@@ -41,7 +41,7 @@ impl UntypedPathParams {
 /// This is mainly to allow the `Request` struct to be passed around
 /// without specifying typed PathParams of any concrete route.
 impl PathParameters for UntypedPathParams {
-  fn get(&self, name: &str) -> Option<&PathParam> {
+  fn get(&self, name: &str) -> Option<&PathParam<'_>> {
     todo!()
   }
 

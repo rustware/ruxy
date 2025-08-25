@@ -80,11 +80,13 @@ pub enum MatchInstructionKind {
   ConsumeLiteralInView(String, MatchDirection),
   /// Check if the path is at the end.
   CheckEndOfPath,
-  /// Respond with the handler of the provided Segment ID
-  InvokeRouteHandler(String),
+  /// Process matched route, e.g. respond with the handler of the provided Segment ID.
+  /// The .0 is the ID of the Route Segment of the matched route.
+  ProcessRouteTargetMatch(String),
   /// Respond with the Not Found handler of the provided Segment ID.
   /// This should be the last child in the series of children instructions.
-  InvokeNotFoundHandler(String),
+  /// The .0 is the ID of the Route Segment holding the corresponding NotFound Target.
+  ProcessNotFoundTargetMatch(String),
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

@@ -34,6 +34,6 @@ pub fn instruct_seg_count_range(ctx: &mut CreateInstructionsContext, sequence: R
     ctx.instructions.push(MatchInstruction { kind, ..Default::default() });
   }
 
-  let kind = MatchInstructionKind::InvokeRouteHandler(ctx.route_segment_id.clone());
+  let kind = MatchInstructionKind::ProcessRouteTargetMatch(ctx.route_segment_id.clone());
   ctx.instructions.push(MatchInstruction { kind, ..Default::default() });
 }

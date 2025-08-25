@@ -1,11 +1,9 @@
-#![allow(unexpected_cfgs)]
-
 use proc_macro2::TokenStream;
 use quote::quote;
 
 use crate::config::{get_app_config, TrailingSlashConfig};
 
-pub fn wrap_router(router: TokenStream) -> TokenStream {
+pub fn wrap_matcher(router: TokenStream) -> TokenStream {
   match get_app_config().trailing_slash {
     TrailingSlashConfig::RequireAbsent => {
       // No wrapper for RequireAbsent, the "end of path" conditions only include

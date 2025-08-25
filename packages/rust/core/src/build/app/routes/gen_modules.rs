@@ -2,7 +2,7 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
 use crate::routing::routary::Routary;
-use crate::routing::segment::{EitherTarget, RouteSegment, RouteSegmentRsModule, RenderTarget, HandlerTarget, MultiTarget};
+use crate::routing::segment::{EitherTarget, RouteSegment, RouteSegmentRsModule, RenderTarget, HandlerTarget};
 use crate::util::fs::get_project_dir;
 
 pub fn gen_route_modules(route_tree: &Routary) -> TokenStream {
@@ -71,7 +71,7 @@ pub fn gen_route_modules_for_segment(segment: &RouteSegment) -> TokenStream {
         #[doc(hidden)]
         #[path = #path]
         #[allow(refining_impl_trait)]
-        mod #inner_mod_ident;
+        pub(in crate::app) mod #inner_mod_ident;
       }
     }
   });

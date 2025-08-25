@@ -80,7 +80,7 @@ fn create_root_instructions(segment: &RouteSegment) -> Vec<MatchInstruction> {
 
   instructions.extend([
     MatchInstruction { kind: MatchInstructionKind::CheckEndOfPath, ..Default::default() },
-    MatchInstruction { kind: MatchInstructionKind::InvokeRouteHandler(segment.identifier.clone()), ..Default::default() },
+    MatchInstruction { kind: MatchInstructionKind::ProcessRouteTargetMatch(segment.identifier.clone()), ..Default::default() },
   ]);
 
   instructions
@@ -131,7 +131,7 @@ fn create_route_instructions_loop(ctx: &mut CreateInstructionsContext) {
     ctx.instructions.extend([
       MatchInstruction { kind: MatchInstructionKind::CheckEndOfPath, ..Default::default() },
       MatchInstruction {
-        kind: MatchInstructionKind::InvokeRouteHandler(ctx.route_segment_id.clone()),
+        kind: MatchInstructionKind::ProcessRouteTargetMatch(ctx.route_segment_id.clone()),
         ..Default::default()
       },
     ]);

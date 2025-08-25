@@ -25,7 +25,7 @@ pub mod __ruxy_macro_internal {
   pub use hyper::body::Frame;
 
   // Internals
-  pub use ruxy_core::build::build;
+  pub use ruxy_core::build::{build, BuildConfig};
   pub use ruxy_core::config::register_app_config;
   pub use ruxy_core::server::response::body::ResponseBody;
   pub use ruxy_core::server::tserver::HandlerResult;

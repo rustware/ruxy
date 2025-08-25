@@ -131,11 +131,11 @@ pub struct RouteSegmentClientEntry {
   pub name: String,
   /// File path from routes directory (e.g. "foo/bar/page.tsx")
   pub path: PathBuf,
-  pub ext: PageClientEntryExt,
+  pub ext: RouteSegmentClientEntryExt,
 }
 
 #[derive(Debug)]
-pub enum PageClientEntryExt {
+pub enum RouteSegmentClientEntryExt {
   Js,
   Jsx,
   Ts,

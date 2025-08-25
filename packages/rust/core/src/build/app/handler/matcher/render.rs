@@ -4,7 +4,7 @@ use quote::quote;
 use crate::routing::instruction::{MatchInstructionKind, MatchDirection};
 use crate::routing::segment::Arity;
 
-use crate::build::app::handler::generator::context::GenContext;
+use crate::build::app::context::GenContext;
 use crate::build::app::handler::responder::gen_segment_responder;
 
 pub fn render_instruction(ctx: &GenContext, kind: &MatchInstructionKind, children: TokenStream) -> TokenStream {
@@ -174,11 +174,11 @@ pub fn render_instruction(ctx: &GenContext, kind: &MatchInstructionKind, childre
     MatchInstructionKind::CheckEndOfPath => quote! {
       if path.is_empty() { #children }
     },
-    MatchInstructionKind::InvokeRouteHandler(segment_id) => {
-      let segment = &ctx.routes.segment_map[segment_id];
+    MatchInstructionKind::ProcessRouteTargetMatch(segment_id) => {
+      let segment = &ctx.routary.segment_map[segment_id];
       gen_segment_responder(ctx, segment)
     }
-    MatchInstructionKind::InvokeNotFoundHandler(segment_id) => quote! {
+    MatchInstructionKind::ProcessNotFoundTargetMatch(segment_id) => quote! {
       // todo
     },
   }

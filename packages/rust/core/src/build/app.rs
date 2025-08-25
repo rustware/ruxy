@@ -1,3 +1,4 @@
+mod context;
 mod errors;
 mod handler;
 mod input;
@@ -7,24 +8,22 @@ mod routes;
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
-use crate::util::fs::get_project_dir;
-
+use crate::build::BuildConfig;
 use crate::config::gen_config_module;
 use crate::routing::routary::Routary;
 
+use context::GenContext;
 use errors::render_errors;
 use routes::gen_route_modules;
 
-pub fn ruxy_app() -> Result<TokenStream, TokenStream> {
-  let project_dir = get_project_dir();
-  let routes_dir = project_dir.join("app/routes");
-
-  let routary = Routary::parse(&routes_dir);
-
-  let route_modules = gen_route_modules(&routary);
+pub fn ruxy_app(routary: &Routary, build_config: &BuildConfig) -> Result<TokenStream, TokenStream> {
+  let route_modules = gen_route_modules(routary);
   let config_module = gen_config_module();
 
-  let handler_function = handler::gen_handler_function(&routary);
+  // Create GenContext to pass it to the nested generators
+  let ctx = GenContext { routary, build_config };
+
+  let handler_functions = handler::gen_handler_functions(&ctx);
   let main_function = main::gen_main_function();
 
   let errors = routary.get_compile_errors();
@@ -44,7 +43,7 @@ pub fn ruxy_app() -> Result<TokenStream, TokenStream> {
       struct App;
 
       impl internal::Server for App {
-        #handler_function
+        #handler_functions
         #main_function
       }
 

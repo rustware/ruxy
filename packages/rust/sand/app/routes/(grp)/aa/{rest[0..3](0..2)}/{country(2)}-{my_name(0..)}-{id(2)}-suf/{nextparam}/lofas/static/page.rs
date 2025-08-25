@@ -18,3 +18,9 @@ pub async fn generate() -> ruxy::GeneratorOutput<Props> {
   // Create build-time props here
   ruxy::redirect("/somewhere").permanent().into()
 }
+
+use ruxy::Loadable;
+
+pub async fn loader() -> impl Loadable {
+  42
+}

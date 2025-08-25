@@ -23,7 +23,7 @@ pub fn ruxy_build(input: TokenStream) -> Result<TokenStream, TokenStream> {
 
       pub(super) fn #main_fn_ident() {
         internal::register_app_config(config::config());
-        internal::build();
+        internal::build(internal::BuildConfig::parse());
       }
     }
 

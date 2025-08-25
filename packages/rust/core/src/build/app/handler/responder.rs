@@ -1,17 +1,36 @@
+mod loader_call;
+
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::quote;
 
 use crate::routing::routary::Routary;
-use crate::routing::segment::{DynamicSequence, RouteSegment, SegmentEffect, TypedSequence};
+use crate::routing::segment::{DynamicSequence, EitherTarget, HandlerTarget, RenderTarget, RouteSegment, SegmentEffect, TypedSequence};
 
-use crate::build::app::handler::generator::context::GenContext;
+use crate::build::app::context::GenContext;
+use crate::build::app::handler::responder::loader_call::gen_loader_call;
+use crate::build::build_config::BuildMode;
 
 pub fn gen_segment_responder(ctx: &GenContext, segment: &RouteSegment) -> TokenStream {
   let identifier = &segment.identifier;
 
-  let path_params: Vec<TokenStream> = extract_idents_for_segment(segment, ctx.routes);
+  let path_params: Vec<TokenStream> = extract_path_params(segment, ctx.routary);
+
+  // TODO: If `page.tsx` exists, we'll return a page that says "Building...", with a websocket
+  //       that connects to the server and updates the page as the build progresses.
+  //       If the `page.tsx` doesn't exist, we'll return a page that outputs the route name,
+  //       all the params and returned Props (if page.rs exists), and instructions on how to
+  //       create the client page.
+
+  let responder = match (&segment.route_target, &ctx.build_config.mode) {
+    (Some(EitherTarget::Render(target)), BuildMode::Development) => gen_page_responder_dev(ctx, segment, target),
+    (Some(EitherTarget::Render(target)), BuildMode::Production) => gen_page_responder_prod(ctx, segment, target),
+    (Some(EitherTarget::Handler(target)), _) => gen_handler_responder(ctx, segment, target),
+    _ => unreachable!("responder generator called for segment without a route target")
+  };
 
   quote! {
+    #responder
+
     let mut response = hyper::Response::builder();
 
     response = response.status(200);
@@ -42,7 +61,7 @@ pub fn gen_segment_responder(ctx: &GenContext, segment: &RouteSegment) -> TokenS
   }
 }
 
-fn extract_idents_for_segment(segment: &RouteSegment, routes: &Routary) -> Vec<TokenStream> {
+fn extract_path_params(segment: &RouteSegment, routes: &Routary) -> Vec<TokenStream> {
   let mut v = Vec::new();
 
   if let SegmentEffect::UrlMatcher { sequences } = &segment.effect {
@@ -67,11 +86,28 @@ fn extract_idents_for_segment(segment: &RouteSegment, routes: &Routary) -> Vec<T
     }
   }
 
-  if let Some(parent) = &segment.parent {
-    if let Some(parent) = routes.segment_map.get(parent) {
-      v.extend(extract_idents_for_segment(parent, routes))
-    }
+  if let Some(parent) = &segment.parent && let Some(parent) = routes.segment_map.get(parent) {
+    v.extend(extract_path_params(parent, routes))
   }
 
   v
+}
+
+fn gen_page_responder_dev(ctx: &GenContext, segment: &RouteSegment, target: &RenderTarget) -> TokenStream {
+  // TODO: Layout loader calls
+  let loader_call = gen_loader_call(ctx, segment, target);
+
+  quote! {
+    #loader_call
+  }
+}
+
+fn gen_page_responder_prod(ctx: &GenContext, segment: &RouteSegment, target: &RenderTarget) -> TokenStream {
+  // TODO: Call pre-generated function on App::segment_blahblah_page();
+  // TODO: Pre-generate that function.
+  quote! {}
+}
+
+fn gen_handler_responder(ctx: &GenContext, segment: &RouteSegment, target: &HandlerTarget) -> TokenStream {
+  quote! {}
 }

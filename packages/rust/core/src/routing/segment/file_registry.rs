@@ -1,48 +1,14 @@
 use std::path::{MAIN_SEPARATOR_STR, Path, PathBuf};
 
-use crate::routing::segment::{EitherTarget, HandlerTarget, MultiTarget, PageClientEntryExt, RenderTarget, RouteSegmentClientEntry, RouteSegmentRsModule};
-
-const F_PAGE_RS: &str = "page.rs";
-const F_PAGE_JS: &str = "page.js";
-const F_PAGE_JSX: &str = "page.jsx";
-const F_PAGE_TS: &str = "page.ts";
-const F_PAGE_TSX: &str = "page.tsx";
-const F_PAGE_MD: &str = "page.md";
-const F_PAGE_MDX: &str = "page.mdx";
-
-const F_HANDLER_RS: &str = "handler.rs";
-
-const F_NOT_FOUND_PAGE_RS: &str = "not_found_page.rs";
-const F_NOT_FOUND_PAGE_JS: &str = "not_found_page.js";
-const F_NOT_FOUND_PAGE_JSX: &str = "not_found_page.jsx";
-const F_NOT_FOUND_PAGE_TS: &str = "not_found_page.ts";
-const F_NOT_FOUND_PAGE_TSX: &str = "not_found_page.tsx";
-const F_NOT_FOUND_PAGE_MD: &str = "not_found_page.md";
-const F_NOT_FOUND_PAGE_MDX: &str = "not_found_page.mdx";
-
-const F_NOT_FOUND_HANDLER_RS: &str = "not_found_handler.rs";
-
-const F_ERROR_PAGE_RS: &str = "error_page.rs";
-const F_ERROR_PAGE_JS: &str = "error_page.js";
-const F_ERROR_PAGE_JSX: &str = "error_page.jsx";
-const F_ERROR_PAGE_TS: &str = "error_page.ts";
-const F_ERROR_PAGE_TSX: &str = "error_page.tsx";
-const F_ERROR_PAGE_MD: &str = "error_page.md";
-const F_ERROR_PAGE_MDX: &str = "error_page.mdx";
-
-const F_ERROR_HANDLER_RS: &str = "error_handler.rs";
-
-const F_LAYOUT_RS: &str = "layout.rs";
-const F_LAYOUT_JS: &str = "layout.js";
-const F_LAYOUT_JSX: &str = "layout.jsx";
-const F_LAYOUT_TS: &str = "layout.ts";
-const F_LAYOUT_TSX: &str = "layout.tsx";
-const F_LAYOUT_MD: &str = "layout.md";
-const F_LAYOUT_MDX: &str = "layout.mdx";
+use crate::constants;
+use crate::routing::segment::{
+  EitherTarget, HandlerTarget, MultiTarget, RouteSegmentClientEntryExt, RenderTarget, RouteSegmentClientEntry,
+  RouteSegmentRsModule,
+};
 
 struct SegmentClientFile {
   name: String,
-  extension: PageClientEntryExt,
+  extension: RouteSegmentClientEntryExt,
 }
 
 #[derive(Default)]
@@ -92,59 +58,56 @@ impl SegmentFileRegistry {
 
   pub fn register(&mut self, file_name: &str) -> Result<bool, String> {
     match file_name {
-      F_PAGE_RS => self.register_route_page_rs(),
-      F_PAGE_JS => self.register_route_page_client(file_name, PageClientEntryExt::Js),
-      F_PAGE_JSX => self.register_route_page_client(file_name, PageClientEntryExt::Jsx),
-      F_PAGE_TS => self.register_route_page_client(file_name, PageClientEntryExt::Ts),
-      F_PAGE_TSX => self.register_route_page_client(file_name, PageClientEntryExt::Tsx),
-      F_PAGE_MD => self.register_route_page_client(file_name, PageClientEntryExt::Md),
-      F_PAGE_MDX => self.register_route_page_client(file_name, PageClientEntryExt::Mdx),
-      F_HANDLER_RS => self.register_route_handler_rs(),
+      constants::SEG_FILE_PAGE_RS => self.register_route_page_rs(),
+      constants::SEG_FILE_PAGE_JS => self.register_route_page_client(file_name, RouteSegmentClientEntryExt::Js),
+      constants::SEG_FILE_PAGE_JSX => self.register_route_page_client(file_name, RouteSegmentClientEntryExt::Jsx),
+      constants::SEG_FILE_PAGE_TS => self.register_route_page_client(file_name, RouteSegmentClientEntryExt::Ts),
+      constants::SEG_FILE_PAGE_TSX => self.register_route_page_client(file_name, RouteSegmentClientEntryExt::Tsx),
+      constants::SEG_FILE_PAGE_MD => self.register_route_page_client(file_name, RouteSegmentClientEntryExt::Md),
+      constants::SEG_FILE_PAGE_MDX => self.register_route_page_client(file_name, RouteSegmentClientEntryExt::Mdx),
+      constants::SEG_FILE_HANDLER_RS => self.register_route_handler_rs(),
 
-      F_NOT_FOUND_PAGE_RS => self.register_not_found_page_rs(),
-      F_NOT_FOUND_PAGE_JS => self.register_not_found_page_client(file_name, PageClientEntryExt::Js),
-      F_NOT_FOUND_PAGE_JSX => self.register_not_found_page_client(file_name, PageClientEntryExt::Jsx),
-      F_NOT_FOUND_PAGE_TS => self.register_not_found_page_client(file_name, PageClientEntryExt::Ts),
-      F_NOT_FOUND_PAGE_TSX => self.register_not_found_page_client(file_name, PageClientEntryExt::Tsx),
-      F_NOT_FOUND_PAGE_MD => self.register_not_found_page_client(file_name, PageClientEntryExt::Md),
-      F_NOT_FOUND_PAGE_MDX => self.register_not_found_page_client(file_name, PageClientEntryExt::Mdx),
-      F_NOT_FOUND_HANDLER_RS => self.register_not_found_handler_rs(),
+      constants::SEG_FILE_NOT_FOUND_PAGE_RS => self.register_not_found_page_rs(),
+      constants::SEG_FILE_NOT_FOUND_PAGE_JS => self.register_not_found_page_client(file_name, RouteSegmentClientEntryExt::Js),
+      constants::SEG_FILE_NOT_FOUND_PAGE_JSX => self.register_not_found_page_client(file_name, RouteSegmentClientEntryExt::Jsx),
+      constants::SEG_FILE_NOT_FOUND_PAGE_TS => self.register_not_found_page_client(file_name, RouteSegmentClientEntryExt::Ts),
+      constants::SEG_FILE_NOT_FOUND_PAGE_TSX => self.register_not_found_page_client(file_name, RouteSegmentClientEntryExt::Tsx),
+      constants::SEG_FILE_NOT_FOUND_PAGE_MD => self.register_not_found_page_client(file_name, RouteSegmentClientEntryExt::Md),
+      constants::SEG_FILE_NOT_FOUND_PAGE_MDX => self.register_not_found_page_client(file_name, RouteSegmentClientEntryExt::Mdx),
+      constants::SEG_FILE_NOT_FOUND_HANDLER_RS => self.register_not_found_handler_rs(),
 
-      F_ERROR_PAGE_RS => self.register_error_page_rs(),
-      F_ERROR_PAGE_JS => self.register_error_page_client(file_name, PageClientEntryExt::Js),
-      F_ERROR_PAGE_JSX => self.register_error_page_client(file_name, PageClientEntryExt::Jsx),
-      F_ERROR_PAGE_TS => self.register_error_page_client(file_name, PageClientEntryExt::Ts),
-      F_ERROR_PAGE_TSX => self.register_error_page_client(file_name, PageClientEntryExt::Tsx),
-      F_ERROR_PAGE_MD => self.register_error_page_client(file_name, PageClientEntryExt::Md),
-      F_ERROR_PAGE_MDX => self.register_error_page_client(file_name, PageClientEntryExt::Mdx),
-      F_ERROR_HANDLER_RS => self.register_error_handler_rs(),
+      constants::SEG_FILE_ERROR_PAGE_RS => self.register_error_page_rs(),
+      constants::SEG_FILE_ERROR_PAGE_JS => self.register_error_page_client(file_name, RouteSegmentClientEntryExt::Js),
+      constants::SEG_FILE_ERROR_PAGE_JSX => self.register_error_page_client(file_name, RouteSegmentClientEntryExt::Jsx),
+      constants::SEG_FILE_ERROR_PAGE_TS => self.register_error_page_client(file_name, RouteSegmentClientEntryExt::Ts),
+      constants::SEG_FILE_ERROR_PAGE_TSX => self.register_error_page_client(file_name, RouteSegmentClientEntryExt::Tsx),
+      constants::SEG_FILE_ERROR_PAGE_MD => self.register_error_page_client(file_name, RouteSegmentClientEntryExt::Md),
+      constants::SEG_FILE_ERROR_PAGE_MDX => self.register_error_page_client(file_name, RouteSegmentClientEntryExt::Mdx),
+      constants::SEG_FILE_ERROR_HANDLER_RS => self.register_error_handler_rs(),
 
-      F_LAYOUT_RS => self.register_layout_rs(),
-      F_LAYOUT_JS => self.register_layout_client(file_name, PageClientEntryExt::Js),
-      F_LAYOUT_JSX => self.register_layout_client(file_name, PageClientEntryExt::Jsx),
-      F_LAYOUT_TS => self.register_layout_client(file_name, PageClientEntryExt::Ts),
-      F_LAYOUT_TSX => self.register_layout_client(file_name, PageClientEntryExt::Tsx),
-      F_LAYOUT_MD => self.register_layout_client(file_name, PageClientEntryExt::Md),
-      F_LAYOUT_MDX => self.register_layout_client(file_name, PageClientEntryExt::Mdx),
+      constants::SEG_FILE_LAYOUT_RS => self.register_layout_rs(),
+      constants::SEG_FILE_LAYOUT_JS => self.register_layout_client(file_name, RouteSegmentClientEntryExt::Js),
+      constants::SEG_FILE_LAYOUT_JSX => self.register_layout_client(file_name, RouteSegmentClientEntryExt::Jsx),
+      constants::SEG_FILE_LAYOUT_TS => self.register_layout_client(file_name, RouteSegmentClientEntryExt::Ts),
+      constants::SEG_FILE_LAYOUT_TSX => self.register_layout_client(file_name, RouteSegmentClientEntryExt::Tsx),
+      constants::SEG_FILE_LAYOUT_MD => self.register_layout_client(file_name, RouteSegmentClientEntryExt::Md),
+      constants::SEG_FILE_LAYOUT_MDX => self.register_layout_client(file_name, RouteSegmentClientEntryExt::Mdx),
       _ => Ok(false),
     }
   }
 
   pub fn take_route_target(&mut self) -> Option<EitherTarget> {
     if self.route_handler_rs {
-      let rs_module = self.get_rs_module("route_handler", F_HANDLER_RS);
+      let rs_module = self.get_rs_module("route_handler", constants::SEG_FILE_HANDLER_RS);
       return Some(EitherTarget::Handler(HandlerTarget { rs_module }));
     }
 
     let page_client = self.route_page_client.take();
 
-    let mut target = RenderTarget {
-      client_entry: self.get_client_entry(page_client),
-      rs_module: None,
-    };
+    let mut target = RenderTarget { client_entry: self.get_client_entry(page_client), rs_module: None };
 
     if self.route_page_rs {
-      target.rs_module = Some(self.get_rs_module("route_page", F_PAGE_RS));
+      target.rs_module = Some(self.get_rs_module("route_page", constants::SEG_FILE_PAGE_RS));
     }
 
     if target.client_entry.is_some() || target.rs_module.is_some() {
@@ -156,47 +119,41 @@ impl SegmentFileRegistry {
 
   pub fn take_not_found_target(&mut self) -> Option<EitherTarget> {
     if self.not_found_handler_rs {
-      let rs_module = self.get_rs_module("not_found_handler", F_NOT_FOUND_HANDLER_RS);
+      let rs_module = self.get_rs_module("not_found_handler", constants::SEG_FILE_NOT_FOUND_HANDLER_RS);
       return Some(EitherTarget::Handler(HandlerTarget { rs_module }));
     }
 
     let page_client = self.not_found_page_client.take();
-    
-    let mut target = RenderTarget {
-      client_entry: self.get_client_entry(page_client),
-      rs_module: None,
-    };
-    
+
+    let mut target = RenderTarget { client_entry: self.get_client_entry(page_client), rs_module: None };
+
     if self.not_found_page_rs {
-      target.rs_module = Some(self.get_rs_module("not_found_page", F_NOT_FOUND_PAGE_RS));
+      target.rs_module = Some(self.get_rs_module("not_found_page", constants::SEG_FILE_NOT_FOUND_PAGE_RS));
     }
-    
+
     if target.client_entry.is_some() || target.rs_module.is_some() {
       return Some(EitherTarget::Render(target));
     }
 
     None
   }
-  
+
   pub fn take_error_target(&mut self) -> Option<MultiTarget> {
     let mut target = MultiTarget::default();
-    
+
     if self.error_handler_rs {
-      let rs_module = self.get_rs_module("error_handler", F_ERROR_HANDLER_RS);
+      let rs_module = self.get_rs_module("error_handler", constants::SEG_FILE_ERROR_HANDLER_RS);
       target.handler = Some(HandlerTarget { rs_module });
     }
 
     let page_client = self.error_page_client.take();
-    
-    let mut render_target = RenderTarget {
-      client_entry: self.get_client_entry(page_client),
-      rs_module: None,
-    };
-    
+
+    let mut render_target = RenderTarget { client_entry: self.get_client_entry(page_client), rs_module: None };
+
     if self.error_page_rs {
-      render_target.rs_module = Some(self.get_rs_module("error_page", F_ERROR_PAGE_RS));
+      render_target.rs_module = Some(self.get_rs_module("error_page", constants::SEG_FILE_ERROR_PAGE_RS));
     }
-    
+
     if render_target.client_entry.is_some() || render_target.rs_module.is_some() {
       target.render = Some(render_target);
     }
@@ -204,20 +161,17 @@ impl SegmentFileRegistry {
     if target.render.is_some() || target.handler.is_some() {
       return Some(target);
     }
-    
+
     None
   }
 
   pub fn take_layout_target(&mut self) -> Option<RenderTarget> {
     let layout_client = self.layout_client.take();
 
-    let mut target = RenderTarget {
-      client_entry: self.get_client_entry(layout_client),
-      rs_module: None,
-    };
+    let mut target = RenderTarget { client_entry: self.get_client_entry(layout_client), rs_module: None };
 
     if self.layout_rs {
-      target.rs_module = Some(self.get_rs_module("layout", F_LAYOUT_RS));
+      target.rs_module = Some(self.get_rs_module("layout", constants::SEG_FILE_LAYOUT_RS));
     }
 
     if target.client_entry.is_some() || target.rs_module.is_some() {
@@ -231,42 +185,31 @@ impl SegmentFileRegistry {
     let module_prefix = format!("rsgmod_{}_", self.segment_hex);
     let path = &self.rs_module_rel_path.join(file);
 
-    RouteSegmentRsModule {
-      name: format!("{module_prefix}{name}"),
-      path: path.to_str().unwrap_or("").to_string(),
-    }
+    RouteSegmentRsModule { name: format!("{module_prefix}{name}"), path: path.to_str().unwrap_or("").to_string() }
   }
 
   fn get_client_entry(&self, client_file: Option<SegmentClientFile>) -> Option<RouteSegmentClientEntry> {
-    let Some(page_client) = client_file else {
-      return None;
-    };
-    
+    let page_client = client_file?;
     let path = self.segment_rel_path.join(&page_client.name);
-
-    Some(RouteSegmentClientEntry {
-      name: page_client.name,
-      path,
-      ext: page_client.extension,
-    })
+    Some(RouteSegmentClientEntry { name: page_client.name, path, ext: page_client.extension })
   }
 
   fn register_route_page_rs(&mut self) -> Result<bool, String> {
     if self.route_handler_rs {
-      return Err(self.get_file_conflict_error(F_PAGE_RS, F_HANDLER_RS));
+      return Err(self.get_file_conflict_error(constants::SEG_FILE_PAGE_RS, constants::SEG_FILE_HANDLER_RS));
     }
 
     self.route_page_rs = true;
     Ok(true)
   }
 
-  fn register_route_page_client(&mut self, file_name: &str, ext: PageClientEntryExt) -> Result<bool, String> {
+  fn register_route_page_client(&mut self, file_name: &str, ext: RouteSegmentClientEntryExt) -> Result<bool, String> {
     if self.route_page_client.is_some() {
       return Err(self.get_client_extension_conflict_error(file_name));
     }
 
     if self.route_handler_rs {
-      return Err(self.get_file_conflict_error(file_name, F_HANDLER_RS));
+      return Err(self.get_file_conflict_error(file_name, constants::SEG_FILE_HANDLER_RS));
     }
 
     self.route_page_client = Some(SegmentClientFile { name: file_name.to_string(), extension: ext });
@@ -275,11 +218,11 @@ impl SegmentFileRegistry {
 
   fn register_route_handler_rs(&mut self) -> Result<bool, String> {
     if self.route_page_rs {
-      return Err(self.get_file_conflict_error(F_HANDLER_RS, F_PAGE_RS));
+      return Err(self.get_file_conflict_error(constants::SEG_FILE_HANDLER_RS, constants::SEG_FILE_PAGE_RS));
     }
 
     if let Some(client) = &self.route_page_client {
-      return Err(self.get_file_conflict_error(F_HANDLER_RS, &client.name));
+      return Err(self.get_file_conflict_error(constants::SEG_FILE_HANDLER_RS, &client.name));
     }
 
     self.route_handler_rs = true;
@@ -288,20 +231,22 @@ impl SegmentFileRegistry {
 
   fn register_not_found_page_rs(&mut self) -> Result<bool, String> {
     if self.not_found_handler_rs {
-      return Err(self.get_file_conflict_error(F_NOT_FOUND_PAGE_RS, F_NOT_FOUND_HANDLER_RS));
+      return Err(
+        self.get_file_conflict_error(constants::SEG_FILE_NOT_FOUND_PAGE_RS, constants::SEG_FILE_NOT_FOUND_HANDLER_RS),
+      );
     }
 
     self.not_found_page_rs = true;
     Ok(true)
   }
 
-  fn register_not_found_page_client(&mut self, file_name: &str, ext: PageClientEntryExt) -> Result<bool, String> {
+  fn register_not_found_page_client(&mut self, file_name: &str, ext: RouteSegmentClientEntryExt) -> Result<bool, String> {
     if self.not_found_page_client.is_some() {
       return Err(self.get_client_extension_conflict_error(file_name));
     }
 
     if self.not_found_handler_rs {
-      return Err(self.get_file_conflict_error(file_name, F_NOT_FOUND_HANDLER_RS));
+      return Err(self.get_file_conflict_error(file_name, constants::SEG_FILE_NOT_FOUND_HANDLER_RS));
     }
 
     self.not_found_page_client = Some(SegmentClientFile { name: file_name.to_string(), extension: ext });
@@ -310,11 +255,13 @@ impl SegmentFileRegistry {
 
   fn register_not_found_handler_rs(&mut self) -> Result<bool, String> {
     if self.not_found_page_rs {
-      return Err(self.get_file_conflict_error(F_NOT_FOUND_HANDLER_RS, F_NOT_FOUND_PAGE_RS));
+      return Err(
+        self.get_file_conflict_error(constants::SEG_FILE_NOT_FOUND_HANDLER_RS, constants::SEG_FILE_NOT_FOUND_PAGE_RS),
+      );
     }
 
     if let Some(client) = &self.not_found_page_client {
-      return Err(self.get_file_conflict_error(F_NOT_FOUND_HANDLER_RS, &client.name));
+      return Err(self.get_file_conflict_error(constants::SEG_FILE_NOT_FOUND_HANDLER_RS, &client.name));
     }
 
     self.not_found_handler_rs = true;
@@ -323,20 +270,20 @@ impl SegmentFileRegistry {
 
   fn register_error_page_rs(&mut self) -> Result<bool, String> {
     if self.error_handler_rs {
-      return Err(self.get_file_conflict_error(F_ERROR_PAGE_RS, F_ERROR_HANDLER_RS));
+      return Err(self.get_file_conflict_error(constants::SEG_FILE_ERROR_PAGE_RS, constants::SEG_FILE_ERROR_HANDLER_RS));
     }
 
     self.error_page_rs = true;
     Ok(true)
   }
 
-  fn register_error_page_client(&mut self, file_name: &str, ext: PageClientEntryExt) -> Result<bool, String> {
+  fn register_error_page_client(&mut self, file_name: &str, ext: RouteSegmentClientEntryExt) -> Result<bool, String> {
     if self.error_page_client.is_some() {
       return Err(self.get_client_extension_conflict_error(file_name));
     }
 
     if self.error_handler_rs {
-      return Err(self.get_file_conflict_error(file_name, F_ERROR_HANDLER_RS));
+      return Err(self.get_file_conflict_error(file_name, constants::SEG_FILE_ERROR_HANDLER_RS));
     }
 
     self.error_page_client = Some(SegmentClientFile { name: file_name.to_string(), extension: ext });
@@ -345,11 +292,11 @@ impl SegmentFileRegistry {
 
   fn register_error_handler_rs(&mut self) -> Result<bool, String> {
     if self.error_page_rs {
-      return Err(self.get_file_conflict_error(F_ERROR_HANDLER_RS, F_ERROR_PAGE_RS));
+      return Err(self.get_file_conflict_error(constants::SEG_FILE_ERROR_HANDLER_RS, constants::SEG_FILE_ERROR_PAGE_RS));
     }
 
     if let Some(client) = &self.error_page_client {
-      return Err(self.get_file_conflict_error(F_ERROR_HANDLER_RS, &client.name));
+      return Err(self.get_file_conflict_error(constants::SEG_FILE_ERROR_HANDLER_RS, &client.name));
     }
 
     self.error_handler_rs = true;
@@ -361,7 +308,7 @@ impl SegmentFileRegistry {
     Ok(true)
   }
 
-  fn register_layout_client(&mut self, file_name: &str, ext: PageClientEntryExt) -> Result<bool, String> {
+  fn register_layout_client(&mut self, file_name: &str, ext: RouteSegmentClientEntryExt) -> Result<bool, String> {
     self.layout_client = Some(SegmentClientFile { name: file_name.to_string(), extension: ext });
     Ok(true)
   }
