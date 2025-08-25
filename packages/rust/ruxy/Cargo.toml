@@ -1,0 +1,17 @@
+[package]
+name = "ruxy"
+version = "0.1.0"
+edition = "2024"
+
+description = "Web framework for Rust and React"
+homepage = "https://ruxy.dev"
+repository = "https://github.com/rustware/ruxy"
+documentation = "https://ruxy.dev/docs"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+ruxy_core = { path = "../core" }
+ruxy_macro = { path = "../macro" }
+
+hyper.workspace = true
+bytes.workspace = true

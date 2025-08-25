@@ -7,21 +7,21 @@
       <sourceFolder url="file://$MODULE_DIR$/packages/cli/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/compiler/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/config/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/packages/core/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/packages/macro/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/macro_support/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/mytest/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/routing/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/runtime/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/packages/ruxy/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/packages/sand/app" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/rust/core/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/rust/macro/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/rust/ruxy/src" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/packages/rust/sand/app" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/server/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/shared/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/packages/util/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
       <excludeFolder url="file://$MODULE_DIR$/vvb/target" />
       <excludeFolder url="file://$MODULE_DIR$/packages/mytest/config/target" />
-      <excludeFolder url="file://$MODULE_DIR$/packages/ruxy/target" />
+      <excludeFolder url="file://$MODULE_DIR$/packages/rust/ruxy/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
